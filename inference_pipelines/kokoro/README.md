@@ -7,10 +7,10 @@ This script demonstrates how to run the Kokoro text-to-speech model using Core M
 1.  **Download the Required Core ML Models:**
     You need to download two separate Core ML models for this demo:
 
-    *   **Predict Duration Model (`PredictDuration.mlpackage` - *assuming name*):**
+    *   **Predict Duration Model (`Kokoro_DurationPrediction.mlpackage`):**
         Download from: [https://edgemeter.runlocal.ai/public/uploads/434d119ce918ef22198c3169b920df6c/benchmark](https://edgemeter.runlocal.ai/public/uploads/434d119ce918ef22198c3169b920df6c/benchmark)
 
-    *   **Waveform Generation Model (`WaveformGeneration.mlpackage` - *assuming name*):**
+    *   **Waveform Generation Model (`Kokoro_GenerateWaveform.mlpackage`):**
         Download from: [https://edgemeter.runlocal.ai/public/uploads/b3d6d9599b74f3c86f780d976ccf9441/benchmark](https://edgemeter.runlocal.ai/public/uploads/b3d6d9599b74f3c86f780d976ccf9441/benchmark)
 
     *(Note: Please rename the downloaded files to `PredictDuration.mlpackage` and `WaveformGeneration.mlpackage` respectively, or update the script with the actual downloaded names if they differ.)*
