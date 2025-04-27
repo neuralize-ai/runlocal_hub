@@ -2,6 +2,8 @@
 
 This script demonstrates how to run the Kokoro text-to-speech model using Core ML models to generate audio from text input.
 
+[Kokoro Huggingface](https://huggingface.co/hexgrad/Kokoro-82M)
+
 ## Running the Demo
 
 1.  **Download the Required Core ML Models:**

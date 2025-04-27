@@ -2,6 +2,8 @@
 
 This script demonstrates how to run the Depth Anything V2 model for depth estimation using either a Core ML or an ONNX model. The default is Core ML.
 
+[Depth Anything V2 Huggingface](https://huggingface.co/docs/transformers/main/en/model_doc/depth_anything)
+
 ## Running the Demo
 
 1.  **Download the Default Model (Core ML):**

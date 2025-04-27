@@ -2,6 +2,8 @@
 
 This script demonstrates how to run the Phi-3.5 Vision Instruct model for multimodal tasks (text and image input) using Core ML models.
 
+[Phi-3.5 Vision Instruct Huggingface](https://huggingface.co/edgemeter/Phi-3.5-Vision-Instruct)
+
 ## Running the Demo
 
 1.  **Download the Required Core ML Models:**

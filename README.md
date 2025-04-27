@@ -1,3 +1,5 @@
+![Company Logo](assets/logo.png)
+
 # On-Device Model Inference Pipelines
 
 This repository contains a collection of example inference pipelines designed to run various machine learning models directly on-device, targeting various formats like CoreML, ONNX, TFLite and OpenVINO.
