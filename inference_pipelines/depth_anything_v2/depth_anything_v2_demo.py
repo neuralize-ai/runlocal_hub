@@ -71,11 +71,12 @@ if __name__ == "__main__":
     example_image = Image.open(example_image_path)
 
     print("Loading model")
-    # model_path = Path(__file__).parent / "DepthAnythingV2SmallANE.mlpackage"
-    # model = CoreMLModel.from_path(model_path, compute_units=ct.ComputeUnit.ALL)
+    model_path = Path(__file__).parent / "DepthAnythingV2SmallANE.mlpackage"
+    model = CoreMLModel.from_path(model_path, compute_units=ct.ComputeUnit.ALL)
 
-    model_path = Path(__file__).parent / "DepthAnythingV2Small.onnx"
-    model = OnnxModel.from_path(model_path)
+    # or, use ONNX
+    # model_path = Path(__file__).parent / "DepthAnythingV2Small.onnx"
+    # model = OnnxModel.from_path(model_path)
 
 
     pipeline_input_dict = {"image": example_image}
