@@ -1,0 +1,2 @@
+runlocal_tools==0.0.2
+huggingface_hub

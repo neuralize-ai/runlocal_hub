@@ -1,0 +1,2 @@
+misaki[en,espeak]==0.9.4
+soundfile==0.13.1
