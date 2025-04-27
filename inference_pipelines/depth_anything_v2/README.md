@@ -4,6 +4,9 @@ This script demonstrates how to run the Depth Anything V2 model for depth estima
 
 [Depth Anything V2 Huggingface](https://huggingface.co/docs/transformers/main/en/model_doc/depth_anything)
 
+## Pipeline Homepage
+* https://edgemeter.runlocal.ai/public/pipelines/9616d207-86db-4a4a-b41a-a6f8259491b8
+
 ## Running the Demo
 
 1.  **Download the Default Model (Core ML):**

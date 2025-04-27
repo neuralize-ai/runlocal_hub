@@ -4,6 +4,9 @@ This script demonstrates how to run the Phi-3.5 Vision Instruct model for multim
 
 [Phi-3.5 Vision Instruct Huggingface](https://huggingface.co/edgemeter/Phi-3.5-Vision-Instruct)
 
+## Pipeline Homepage
+* https://edgemeter.runlocal.ai/public/pipelines/42a9e9e7-d8c4-4cdc-91b6-a60792ff7b5c
+
 ## Running the Demo
 
 1.  **Download the Required Core ML Models:**

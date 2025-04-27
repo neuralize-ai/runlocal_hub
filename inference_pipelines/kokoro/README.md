@@ -4,6 +4,9 @@ This script demonstrates how to run the Kokoro text-to-speech model using Core M
 
 [Kokoro Huggingface](https://huggingface.co/hexgrad/Kokoro-82M)
 
+## Pipeline Homepage
+* https://edgemeter.runlocal.ai/public/pipelines/74bc3edc-f202-42a2-a4f3-3743d81f8f22
+
 ## Running the Demo
 
 1.  **Download the Required Core ML Models:**
