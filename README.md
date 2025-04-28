@@ -1,18 +1,23 @@
-![Company Logo](assets/logo.png)
+<div align="center">
+  <img src="assets/logo-sq.png" alt="Company Logo" width="80" />
+  <br>
+  <a href="https://www.runlocal.ai/">www.runlocal.ai</a>
+  <br><br>
+</div>
 
-# On-Device Model Inference Pipelines
+# Model Inference Pipelines
 
-This repository contains a collection of example inference pipelines designed to run various machine learning models directly on-device, targeting various formats like CoreML, ONNX, TFLite and OpenVINO.
+This repo contains inference pipelines for the on-device models we've converted to formats like Core ML, ONNX, TFLite and OpenVINO.
 
-## More Information
+For more context on the pipelines, including the specific models being used and their performance benchmarks, please visit [our product](https://edgemeter.runlocal.ai/public/pipelines).
 
-For detailed information on the pipelines, the specific models used, performance benchmarks, and model compression techniques, please visit:
-
-[https://edgemeter.runlocal.ai/public/pipelines](https://edgemeter.runlocal.ai/public/pipelines)
+<div align="center">
+  <img src="assets/pipelines-screenshot.png" alt="Product Screenshot" width="640" />
+</div>
 
 ## Setup
 
-Before running any specific pipeline, ensure you have installed the base dependencies listed in the root `requirements.txt` file:
+Before running a pipeline, make sure you've installed the base dependencies listed in the root `requirements.txt`:
 
 ```bash
 python -m venv .venv 
@@ -20,7 +25,9 @@ pip install -r requirements.txt
 source .venv/bin/activate
 ```
 
-## PipelinesEach sub-directory within `inference_pipelines/` contains a specific model pipeline, including:
+## Pipelines
+
+Each sub-directory within `inference_pipelines/` contains a specific model pipeline, including:
 
 *   A Python demo script (`*_demo.py`).
 *   A `README.md` with instructions on downloading models and running the demo.
