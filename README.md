@@ -15,7 +15,9 @@ For detailed information on the pipelines, the specific models used, performance
 Before running any specific pipeline, ensure you have installed the base dependencies listed in the root `requirements.txt` file:
 
 ```bash
+python -m venv .venv 
 pip install -r requirements.txt
+source .venv/bin/activate
 ```
 
 ## PipelinesEach sub-directory within `inference_pipelines/` contains a specific model pipeline, including:

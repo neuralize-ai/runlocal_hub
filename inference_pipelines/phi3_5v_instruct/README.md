@@ -25,7 +25,7 @@ This script demonstrates how to run the Phi-3.5 Vision Instruct model for multim
     *   Place all three downloaded `.mlpackage` files into this directory (`inference_pipelines/phi3_5v_instruct/`).
 
 3.  **Install Dependencies:**
-    *   Ensure you have Python installed. Then, install the required dependencies from the `requirements.txt` file located in this directory:
+    *   Ensure you have Python installed. Then, install the additional required dependencies from the `requirements.txt` file located in this directory:
         ```bash
         pip install -r requirements.txt
         ```
