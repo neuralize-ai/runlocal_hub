@@ -18,9 +18,7 @@ Before running any specific pipeline, ensure you have installed the base depende
 pip install -r requirements.txt
 ```
 
-## Pipelines
-
-Each sub-directory within `inference_pipelines/` contains a specific model pipeline, including:
+## PipelinesEach sub-directory within `inference_pipelines/` contains a specific model pipeline, including:
 
 *   A Python demo script (`*_demo.py`).
 *   A `README.md` with instructions on downloading models and running the demo.
@@ -31,5 +29,8 @@ Explore the sub-directories to find specific examples like:
 *   Depth Estimation (`depth_anything_v2`)
 *   Multimodal Language Models (`phi3_5v_instruct`)
 *   Text-to-Speech (`kokoro`)
+*   And more!
 
 *Note: Model files are typically large and are not included directly in the repository. Download links are provided in the respective README files.*
+
+
