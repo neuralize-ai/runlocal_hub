@@ -106,12 +106,10 @@ def run_d_fine_pipeline(model: Model, pipeline_input: Dict) -> Dict:
     }
 
 
-# Removed the DFINEDetectionPipeline class definition
-
 if __name__ == "__main__":
 
 
-    image_path = Path(__file__).parent / "assets" / "example_image.jpg"
+    image_path = Path(__file__).parent / "assets" / "example_image.png"
 
 
     model_path = Path(__file__).parent / "D-FINE.mlpackage"
@@ -131,7 +129,7 @@ if __name__ == "__main__":
     annotated_image = pipeline_output["annotated_image"]
 
     # Save or show the annotated image
-    output_image_path = Path(__file__).parent / "assets" / "annotated_output.jpg"
+    output_image_path = Path(__file__).parent / "assets" / "annotated_output.png"
     annotated_image.save(output_image_path)
     print(f"Annotated image saved to: {output_image_path}")
     annotated_image.show() # Uncomment to display the image directly

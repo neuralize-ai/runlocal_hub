@@ -5,6 +5,7 @@ import tempfile
 import shutil
 from typing import List, Any, Tuple
 
+import PIL
 import numpy as np
 import torch
 import coremltools as ct
@@ -182,6 +183,9 @@ def run_inference(
 
 # --- Example Usage ---
 if __name__ == '__main__':
+
+
+
     # --- Configuration ---
     IMAGE_EMBEDDING_MODEL_PATH = Path(__file__).parent / "Phi3.5VInstruct_ImageEmbedding.mlpackage"
     TEXT_EMBEDDING_MODEL_PATH = Path(__file__).parent / "Phi3.5VTextEmbedding.mlpackage"
@@ -204,19 +208,12 @@ if __name__ == '__main__':
         text_decoder_model = CoreMLModel.from_path(TEXT_DECODER_MODEL_PATH, compute_units=COMPUTE_UNITS, should_compile=True, make_state=True)
 
         # --- Prepare Input Data ---
-        example_images = []
-        urls = [
-            f"https://image.slidesharecdn.com/azureintroduction-191206101932/75/Introduction-to-Microsoft-Azure-Cloud-{i}-2048.jpg"
-            for i in range(1, 3) # Using 2 images
+
+        ASSETS_DIR = Path(__file__).parent / "assets"
+        example_images = [
+            PIL.Image.open(ASSETS_DIR / "AzureCloud_0.jpg").convert("RGB"),
+            PIL.Image.open(ASSETS_DIR / "AzureCloud_1.jpg").convert("RGB"),
         ]
-        print("Downloading example images...")
-        for i, url in enumerate(urls):
-            print(f"  Downloading image {i+1} from {url}")
-            image_bytes = requests.get(url, stream=True, timeout=10).raw
-            image = Image.open(image_bytes).convert("RGB") # Ensure RGB
-            # image.show() # Optionally display images
-            print(f"  Image {i+1} size: {image.size}, Mode: {image.mode}")
-            example_images.append(image)
 
         if not example_images:
              print("Error: No images were successfully loaded. Exiting.")

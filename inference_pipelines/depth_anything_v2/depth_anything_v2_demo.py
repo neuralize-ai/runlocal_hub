@@ -67,7 +67,8 @@ def run_depth_anything_v2_pipeline(model: Model, pipeline_input: Dict):
 
 
 if __name__ == "__main__":
-    example_image_path = Path(__file__).parent / "example_image.jpg"
+    example_image_path = Path(__file__).parent / "assets" / "example_image.jpg"
+
     example_image = Image.open(example_image_path)
 
     print("Loading model")

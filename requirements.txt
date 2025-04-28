@@ -1,2 +1,9 @@
 runlocal_tools==0.0.2
 huggingface_hub
+coremltools
+torch
+torchvision
+onnx
+onnxruntime
+onnxscript
+pillow
