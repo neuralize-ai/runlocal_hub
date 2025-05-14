@@ -20,6 +20,10 @@ You'll need an API key to use the RunLocal API. You can generate one in the RunL
 4. Click "Create New API Key"
 5. Save your API key in a secure location
 
-## Example Script
+## Usage
+
+```bash
+export RUNLOCAL_API_KEY=<your_api_key>
+```
 
 See `example.py` for a complete example of using the client library.
