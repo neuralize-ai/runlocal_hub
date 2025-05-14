@@ -145,7 +145,7 @@ class RunLocalClient:
     Python client for the RunLocal API
     """
 
-    base_url = "http://localhost:8000"
+    base_url = "https://neuralize-bench.com"
 
     def __init__(
         self,
