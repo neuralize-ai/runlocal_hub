@@ -2,7 +2,7 @@
 
 import sys
 import json
-from runlocal_client import RunLocalClient
+from runlocal import RunLocalClient
 
 
 def print_json(title, data):
@@ -67,4 +67,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
