@@ -307,7 +307,9 @@ class RunLocalClient:
         return [
             DeviceUsage(
                 device=device_usage["device"],
-                compute_units=device_usage["compute_units"],
+                compute_units=device_usage["compute_units"]
+                if device_usage.get("compute_units")
+                else [],
             )
             for device_usage in response
         ]
