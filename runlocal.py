@@ -293,14 +293,23 @@ class RunLocalClient:
         if debug:
             print(f"response: {response[:2]}")
 
+        if model_id:
+            return [
+                DeviceUsage(
+                    device=device_usage["device"],
+                    compute_units=device_usage["compute_units"],
+                )
+                for device_usage in response
+                if device_usage.get("compute_units")
+                and len(device_usage.get("compute_units", [])) > 0
+            ]
+
         return [
             DeviceUsage(
                 device=device_usage["device"],
                 compute_units=device_usage["compute_units"],
             )
             for device_usage in response
-            if device_usage.get("compute_units")
-            and len(device_usage.get("compute_units", [])) > 0
         ]
 
     def select_device(
