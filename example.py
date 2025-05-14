@@ -32,7 +32,8 @@ def main():
     device_usage = client.select_device(
         model_id=model_id,
         device_name="MacBook",  # Optional: Filter by device name
-        ram=16,  # Optional: Filter by RAM amount
+        soc="Apple M4",  # Optional: Filter by SoC
+        # ram=16,  # Optional: Filter by RAM amount
     )
 
     if not device_usage:
