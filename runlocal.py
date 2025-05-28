@@ -1,13 +1,16 @@
-import os
-import requests
-from typing import Dict, List, Optional
-from enum import Enum
 import json
-from pydantic import BaseModel
-from decimal import Decimal
+import os
+import tempfile
 import time
-from pathlib import Path
 import zipfile
+from decimal import Decimal
+from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
+
+import requests
+from pydantic import BaseModel
+from tqdm import tqdm
 
 
 class Device(BaseModel):
@@ -150,9 +153,7 @@ class RunLocalClient:
     base_url = "https://neuralize-bench.com"
     env_var_name = "RUNLOCAL_API_KEY"
 
-    def __init__(
-        self,
-    ):
+    def __init__(self, debug=False):
         # Get API key from parameter or environment variable
         api_key = os.environ.get(self.env_var_name)
         if not api_key:
@@ -162,13 +163,13 @@ class RunLocalClient:
 
         self.api_key = api_key
         self.headers = {"X-API-KEY": api_key}
+        self.debug = debug
 
     def _make_request(
         self,
         method: str,
         endpoint: str,
         data: Optional[Dict] = None,
-        debug: bool = False,
     ) -> Dict:
         """
         Make a request to the API
@@ -187,7 +188,7 @@ class RunLocalClient:
         headers = self.headers.copy()
         headers["Content-Type"] = "application/json"
 
-        if debug:
+        if self.debug:
             print(f"Request: {method} {url}")
             print(f"Headers: {headers}")
             if data:
@@ -198,7 +199,7 @@ class RunLocalClient:
                 method=method, url=url, headers=headers, json=data
             )
 
-            if debug:
+            if self.debug:
                 print(f"Response status: {response.status_code}")
                 print(f"Response headers: {dict(response.headers)}")
                 try:
@@ -224,11 +225,11 @@ class RunLocalClient:
             except:
                 return {"text": response.text}
         except requests.exceptions.RequestException as e:
-            if debug:
+            if self.debug:
                 print(f"Request exception: {str(e)}")
             raise Exception(f"Request failed: {str(e)}")
 
-    def health_check(self, debug: bool = False) -> Dict:
+    def health_check(self) -> Dict:
         """
         Check if the API is available and the API key is valid
 
@@ -239,9 +240,9 @@ class RunLocalClient:
             Dict: Health status
         """
         # Use the health endpoint to check authentication
-        return self._make_request("GET", "/users/health", debug=debug)
+        return self._make_request("GET", "/users/health")
 
-    def get_user_info(self, debug: bool = False) -> Dict:
+    def get_user_info(self) -> Dict:
         """
         Get detailed user information for the authenticated user
 
@@ -251,9 +252,9 @@ class RunLocalClient:
         Returns:
             Dict: User information including models, datasets, etc.
         """
-        return self._make_request("GET", "/users", debug=debug)
+        return self._make_request("GET", "/users")
 
-    def get_models(self, debug: bool = False) -> List[str]:
+    def get_models(self) -> List[str]:
         """
         Get a list of model IDs for the authenticated user
 
@@ -263,7 +264,7 @@ class RunLocalClient:
         Returns:
             List[str]: List of model IDs
         """
-        user_data = self._make_request("GET", "/users", debug=debug)
+        user_data = self._make_request("GET", "/users")
         return user_data.get("UploadIds", [])
 
     def _zip_path(self, path: Path, temp_dir: Path) -> Path:
