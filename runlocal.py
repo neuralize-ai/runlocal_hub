@@ -178,7 +178,6 @@ class RunLocalClient:
             method: HTTP method (GET, POST, etc.)
             endpoint: API endpoint
             data: Request data
-            debug: If True, print debugging information
 
         Returns:
             Dict: API response
@@ -233,9 +232,6 @@ class RunLocalClient:
         """
         Check if the API is available and the API key is valid
 
-        Args:
-            debug: If True, print debugging information
-
         Returns:
             Dict: Health status
         """
@@ -246,9 +242,6 @@ class RunLocalClient:
         """
         Get detailed user information for the authenticated user
 
-        Args:
-            debug: If True, print debugging information
-
         Returns:
             Dict: User information including models, datasets, etc.
         """
@@ -257,9 +250,6 @@ class RunLocalClient:
     def get_models(self) -> List[str]:
         """
         Get a list of model IDs for the authenticated user
-
-        Args:
-            debug: If True, print debugging information
 
         Returns:
             List[str]: List of model IDs
@@ -436,15 +426,12 @@ class RunLocalClient:
             except requests.exceptions.RequestException as e:
                 raise Exception(f"Network error during upload: {str(e)}")
 
-    def list_all_devices(
-        self, model_id: Optional[str] = None, debug: bool = False
-    ) -> List[DeviceUsage]:
+    def list_all_devices(self, model_id: Optional[str] = None) -> List[DeviceUsage]:
         """
         Get a list of available devices for benchmarking
 
         Args:
             model_id: Optional ID of a model to get compatible devices
-            debug: If True, print debugging information
 
         Returns:
             List[Dict]: List of available devices with their properties and compute units
@@ -455,7 +442,7 @@ class RunLocalClient:
 
         response = self._make_request("GET", endpoint)
 
-        if debug:
+        if self.debug:
             print(f"response: {response[:2]}")
 
         if model_id:
@@ -487,7 +474,6 @@ class RunLocalClient:
         ram: Optional[int] = None,
         soc: Optional[str] = None,
         year: Optional[int] = None,
-        debug: bool = False,
     ) -> List[DeviceUsage]:
         """
         Select a device based on optional criteria. Returns the first matching device.
@@ -499,7 +485,6 @@ class RunLocalClient:
             ram: Optional RAM amount to filter by (e.g. 16)
             soc: Optional SoC to filter by (e.g. "Apple M2 Pro")
             year: Optional year to filter by (e.g. 2023)
-            debug: If True, print debugging information
 
         Returns:
             Optional[DeviceUsage]: The first matching device or None if no match found
@@ -512,36 +497,52 @@ class RunLocalClient:
             )
 
         # Get all available devices
-        devices = self.list_all_devices(model_id=model_id, debug=debug)
+        devices = self.list_all_devices(model_id=model_id)
 
-        if debug:
+        if self.debug:
             print(f"Found {len(devices)} devices")
 
         # Filter devices based on criteria
-        matching_devices = devices
-
         if device_name is not None:
-            matching_devices = [
-                d for d in matching_devices if device_name in d.device.Name
-            ]
+            devices = [d for d in devices if device_name in d.device.Name]
 
         if soc is not None:
-            matching_devices = [d for d in matching_devices if soc in d.device.Soc]
+            devices = [d for d in devices if soc in d.device.Soc]
 
         if ram is not None:
-            matching_devices = [d for d in matching_devices if d.device.Ram == ram]
+            devices = [d for d in devices if d.device.Ram == ram]
 
         if year is not None:
-            matching_devices = [d for d in matching_devices if d.device.Year == year]
+            devices = [d for d in devices if d.device.Year == year]
 
-        num_devices_found = len(matching_devices)
-        if debug:
-            print(f"Found {num_devices_found} matching devices")
+        num_devices = len(devices)
+        if self.debug:
+            print(f"Found {num_devices} matching devices")
 
-        if count is not None and num_devices_found > count:
-            matching_devices = matching_devices[:count]
+        if count is not None and num_devices > count:
+            devices = devices[:count]
 
-        return matching_devices
+        return devices
+
+    def select_device(
+        self,
+        model_id: str,
+        device_name: Optional[str] = None,
+        ram: Optional[int] = None,
+        soc: Optional[str] = None,
+        year: Optional[int] = None,
+    ) -> Optional[DeviceUsage]:
+        devices = self.select_devices(
+            model_id=model_id,
+            count=1,
+            device_name=device_name,
+            ram=ram,
+            soc=soc,
+            year=year,
+        )
+
+        if len(devices) > 0:
+            return devices[0]
 
     def benchmark_model(
         self,
@@ -550,7 +551,6 @@ class RunLocalClient:
         compute_units: List[str],
         timeout=600,
         poll_interval: int = 10,
-        debug: bool = False,
     ) -> Dict:
         """
         Benchmark a model on a specific device
@@ -562,8 +562,7 @@ class RunLocalClient:
             test_name: Optional name for the benchmark test
             wait_for_results: If True, block until benchmark is complete and return results
             timeout: Maximum time in seconds to wait for benchmark completion (default: 300s)
-            poll_interval: Time in seconds between status checks (default: 5s)
-            debug: If True, print debugging information
+            poll_interval: Time in seconds between status checks (default: 10s)
 
         Returns:
             Dict: Benchmark submission info, or if wait_for_results=True, the complete benchmark results
@@ -589,15 +588,15 @@ class RunLocalClient:
         # Extract the benchmark ID from the response
         benchmark_id = response[0]
 
-        if debug:
+        if self.debug:
             print(f"Benchmark submitted with ID: {benchmark_id}")
 
         if not benchmark_id:
-            if debug:
+            if self.debug:
                 print(f"Could not extract benchmark ID from response: {response}")
             raise ValueError("Could not extract benchmark ID from response")
 
-        if debug:
+        if self.debug:
             print(f"Waiting for benchmark {benchmark_id} to complete...")
 
         # Poll for benchmark completion
@@ -617,26 +616,26 @@ class RunLocalClient:
 
                 # Check if benchmark is complete
                 if status in [BenchmarkStatus.Complete, BenchmarkStatus.Failed]:
-                    if debug:
+                    if self.debug:
                         print("Benchmark completed successfully")
                     # Convert the result to a JSON-friendly dictionary
                     return self._convert_benchmark_to_json_friendly(result)
 
                 # Check if benchmark failed
                 if status in [BenchmarkStatus.Failed, BenchmarkStatus.Deleted]:
-                    if debug:
+                    if self.debug:
                         print(f"Benchmark failed: {result}")
                     raise Exception(f"Benchmark failed with status: {status}")
 
                 # Still in progress
-                if debug:
+                if self.debug:
                     print(f"Benchmark still in progress (status: {status}), waiting...")
             except Exception as e:
                 if "404" in str(e):
                     # Benchmark might not be in the database yet, retry
-                    if debug:
+                    if self.debug:
                         print("Benchmark not found yet, retrying...")
-                elif debug:
+                elif self.debug:
                     print(f"Error checking benchmark status: {e}, retrying...")
 
         # Timeout reached
@@ -747,7 +746,6 @@ class RunLocalClient:
 
         Args:
             benchmark_id: The ID of the benchmark to retrieve
-            debug: If True, print debugging information
 
         Returns:
             Dict: The benchmark data
