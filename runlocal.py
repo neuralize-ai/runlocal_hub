@@ -6,6 +6,8 @@ import json
 from pydantic import BaseModel
 from decimal import Decimal
 import time
+from pathlib import Path
+import zipfile
 
 
 class Device(BaseModel):
@@ -239,6 +241,18 @@ class RunLocalClient:
         # Use the health endpoint to check authentication
         return self._make_request("GET", "/users/health", debug=debug)
 
+    def get_user_info(self, debug: bool = False) -> Dict:
+        """
+        Get detailed user information for the authenticated user
+
+        Args:
+            debug: If True, print debugging information
+
+        Returns:
+            Dict: User information including models, datasets, etc.
+        """
+        return self._make_request("GET", "/users", debug=debug)
+
     def get_models(self, debug: bool = False) -> List[str]:
         """
         Get a list of model IDs for the authenticated user
@@ -252,17 +266,37 @@ class RunLocalClient:
         user_data = self._make_request("GET", "/users", debug=debug)
         return user_data.get("UploadIds", [])
 
-    def get_user_info(self, debug: bool = False) -> Dict:
+    def _zip_path(self, path: Path, temp_dir: Path) -> Path:
         """
-        Get detailed user information for the authenticated user
+        Zip a file or folder.
 
         Args:
-            debug: If True, print debugging information
+            path: Path to file or folder to zip
+            temp_dir: Temporary directory to store the zip file
 
         Returns:
-            Dict: User information including models, datasets, etc.
+            Path to the created zip file
         """
-        return self._make_request("GET", "/users", debug=debug)
+        if not path.exists():
+            raise FileNotFoundError(f"Path does not exist: {path}")
+
+        # Create zip file name based on the input path
+        zip_name = path.stem if path.is_file() else path.name
+        zip_path = temp_dir / f"{zip_name}.zip"
+
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+            if path.is_file():
+                # If it's a single file, add it to the zip
+                zipf.write(path, path.name)
+            else:
+                # If it's a directory, add all files recursively
+                for file_path in path.rglob("*"):
+                    if file_path.is_file():
+                        # Calculate the relative path from the base directory
+                        arcname = file_path.relative_to(path.parent)
+                        zipf.write(file_path, arcname)
+
+        return zip_path
 
     def get_benchmark_devices(
         self, model_id: Optional[str] = None, debug: bool = False
