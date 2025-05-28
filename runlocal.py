@@ -146,24 +146,16 @@ class RunLocalClient:
     """
 
     base_url = "https://neuralize-bench.com"
+    env_var_name = "RUNLOCAL_API_KEY"
 
     def __init__(
         self,
-        env_var_name: str = "RUNLOCAL_API_KEY",
     ):
-        """
-        Initialize the RunLocal client
-
-        Args:
-            api_key: Your API key for authentication (optional, will use environment variable if not provided)
-            base_url: The base URL of the RunLocal API (defaults to localhost)
-            env_var_name: Name of environment variable to get API key from (defaults to RUNLOCAL_API_KEY)
-        """
         # Get API key from parameter or environment variable
-        api_key = os.environ.get(env_var_name)
+        api_key = os.environ.get(self.env_var_name)
         if not api_key:
             raise ValueError(
-                f"{env_var_name} not found in environment. Please set the environment variable."
+                f"{self.env_var_name} not found in environment. Please set the environment variable."
             )
 
         self.api_key = api_key
