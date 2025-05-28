@@ -167,7 +167,7 @@ class RunLocalClient:
             )
 
         self.api_key = api_key
-        self.headers = {"X-API-KEY": api_key, "Content-Type": "application/json"}
+        self.headers = {"X-API-KEY": api_key}
 
     def _make_request(
         self,
@@ -191,6 +191,7 @@ class RunLocalClient:
         url = f"{self.base_url}{endpoint}"
 
         headers = self.headers.copy()
+        headers["Content-Type"] = "application/json"
 
         if debug:
             print(f"Request: {method} {url}")
