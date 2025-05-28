@@ -298,6 +298,140 @@ class RunLocalClient:
 
         return zip_path
 
+    def _parse_sse_message(self, line: str) -> Optional[Dict[str, Any]]:
+        """Parse a Server-Sent Event message line"""
+        if line.startswith("data: "):
+            try:
+                return json.loads(line[6:])
+            except json.JSONDecodeError:
+                return None
+        return None
+
+    def upload_model(
+        self,
+        model_path: Path,
+        show_progress: bool = True,
+    ) -> str:
+        """
+        Upload a model file or folder to the RunLocal platform.
+
+        Args:
+            model_path: Path to the model file or folder to upload
+            show_progress: Whether to show progress bar (default: True)
+
+        Returns:
+            Upload ID of the uploaded model
+
+        Raises:
+            Exception: If upload fails
+        """
+
+        upload_filename = model_path.stem
+
+        # Ensure upload_filename doesn't have .zip extension
+        if upload_filename.endswith(".zip"):
+            upload_filename = upload_filename[:-4]
+
+        # Create temporary directory for zipping
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+
+            # Zip the model
+            print(f"Zipping {model_path}...")
+            zip_path = self._zip_path(model_path, temp_path)
+            zip_size = zip_path.stat().st_size
+
+            print(
+                f"Zip file created: {zip_path.name} ({zip_size / 1024 / 1024:.2f} MB)"
+            )
+
+            # Prepare the request URL and parameters
+            upload_url = f"{self.base_url}/uploads/model/coreml"
+
+            params = {
+                "upload_filename": upload_filename,
+                "upload_source_type": "USER_UPLOADED",
+            }
+
+            # Read the zip file
+            with open(zip_path, "rb") as f:
+                zip_data = f.read()
+
+            # Make the request with streaming response
+            print("Uploading to server...")
+
+            try:
+                response = requests.post(
+                    upload_url,
+                    params=params,
+                    data=zip_data,
+                    headers=self.headers,
+                    stream=True,
+                )
+
+                # Check initial response
+                if response.status_code != 200:
+                    error_detail = response.text
+                    try:
+                        error_json = response.json()
+                        error_detail = error_json.get("detail", response.text)
+                    except:
+                        pass
+                    raise Exception(
+                        f"Upload failed with status {response.status_code}: {error_detail}"
+                    )
+
+                # Process Server-Sent Events
+                upload_id = None
+                already_exists = False
+                progress_bar = None
+
+                if show_progress:
+                    progress_bar = tqdm(total=100, desc="Upload Progress", unit="%")
+
+                for line in response.iter_lines():
+                    if line:
+                        line_str = line.decode("utf-8")
+                        data = self._parse_sse_message(line_str)
+
+                        if data:
+                            # Check for errors
+                            if data.get("error"):
+                                if progress_bar:
+                                    progress_bar.close()
+                                raise Exception(
+                                    f"Server error: {data.get('detail', 'Unknown error')}"
+                                )
+
+                            # Update progress
+                            if "progress" in data and progress_bar:
+                                progress_bar.update(data["progress"] - progress_bar.n)
+
+                            # Extract upload_id
+                            if "upload_id" in data:
+                                upload_id = data["upload_id"]
+                                already_exists = data.get("already_exists", False)
+
+                            # Print status messages
+                            if "message" in data and not show_progress:
+                                print(f"Server: {data['message']}")
+
+                if progress_bar:
+                    progress_bar.close()
+
+                if not upload_id:
+                    raise Exception("No upload ID received from server")
+
+                if already_exists:
+                    print(f"Model already exists with upload_id: {upload_id}")
+                else:
+                    print(f"Model uploaded successfully with upload_id: {upload_id}")
+
+                return upload_id
+
+            except requests.exceptions.RequestException as e:
+                raise Exception(f"Network error during upload: {str(e)}")
+
     def get_benchmark_devices(
         self, model_id: Optional[str] = None, debug: bool = False
     ) -> List[DeviceUsage]:
