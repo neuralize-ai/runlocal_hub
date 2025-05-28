@@ -479,23 +479,25 @@ class RunLocalClient:
             for device_usage in response
         ]
 
-    def select_device(
+    def select_devices(
         self,
         model_id: str,
+        count: Optional[int] = None,
         device_name: Optional[str] = None,
         ram: Optional[int] = None,
         soc: Optional[str] = None,
         year: Optional[int] = None,
         debug: bool = False,
-    ) -> Optional[DeviceUsage]:
+    ) -> List[DeviceUsage]:
         """
         Select a device based on optional criteria. Returns the first matching device.
 
         Args:
             model_id: Required ID of a model to get compatible devices
+            count: Number of devices to select
             device_name: Optional device name to filter by (e.g. "MacBookPro")
             ram: Optional RAM amount to filter by (e.g. 16)
-            soc: Optional SoC to filter by (e.g. "M2Pro")
+            soc: Optional SoC to filter by (e.g. "Apple M2 Pro")
             year: Optional year to filter by (e.g. 2023)
             debug: If True, print debugging information
 
@@ -510,7 +512,7 @@ class RunLocalClient:
             )
 
         # Get all available devices
-        devices = self.get_benchmark_devices(model_id=model_id, debug=debug)
+        devices = self.list_all_devices(model_id=model_id, debug=debug)
 
         if debug:
             print(f"Found {len(devices)} devices")
@@ -532,11 +534,14 @@ class RunLocalClient:
         if year is not None:
             matching_devices = [d for d in matching_devices if d.device.Year == year]
 
+        num_devices_found = len(matching_devices)
         if debug:
-            print(f"Found {len(matching_devices)} matching devices")
+            print(f"Found {num_devices_found} matching devices")
 
-        # Return the first matching device or None
-        return matching_devices[0] if matching_devices else None
+        if count is not None and num_devices_found > count:
+            matching_devices = matching_devices[:count]
+
+        return matching_devices
 
     def benchmark_model(
         self,
