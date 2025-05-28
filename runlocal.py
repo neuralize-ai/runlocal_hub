@@ -436,7 +436,7 @@ class RunLocalClient:
             except requests.exceptions.RequestException as e:
                 raise Exception(f"Network error during upload: {str(e)}")
 
-    def get_benchmark_devices(
+    def list_all_devices(
         self, model_id: Optional[str] = None, debug: bool = False
     ) -> List[DeviceUsage]:
         """
