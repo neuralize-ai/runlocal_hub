@@ -310,7 +310,7 @@ class RunLocalClient:
 
     def upload_model(
         self,
-        model_path: Path,
+        model_path: Union[Path, str],
         show_progress: bool = True,
     ) -> str:
         """
@@ -327,24 +327,26 @@ class RunLocalClient:
             Exception: If upload fails
         """
 
+        model_path = Path(model_path)
         upload_filename = model_path.stem
 
-        # Ensure upload_filename doesn't have .zip extension
-        if upload_filename.endswith(".zip"):
-            upload_filename = upload_filename[:-4]
+        # TODO: ensure compatible format
 
         # Create temporary directory for zipping
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
 
             # Zip the model
-            print(f"Zipping {model_path}...")
+            if self.debug:
+                print(f"Zipping {model_path}...")
+
             zip_path = self._zip_path(model_path, temp_path)
             zip_size = zip_path.stat().st_size
 
-            print(
-                f"Zip file created: {zip_path.name} ({zip_size / 1024 / 1024:.2f} MB)"
-            )
+            if self.debug:
+                print(
+                    f"Zip file created: {zip_path.name} ({zip_size / 1024 / 1024:.2f} MB)"
+                )
 
             # Prepare the request URL and parameters
             upload_url = f"{self.base_url}/uploads/model/coreml"
@@ -358,9 +360,10 @@ class RunLocalClient:
             with open(zip_path, "rb") as f:
                 zip_data = f.read()
 
-            # Make the request with streaming response
-            print("Uploading to server...")
+            if self.debug:
+                print("Uploading to server...")
 
+            # Make the request with streaming response
             try:
                 response = requests.post(
                     upload_url,
@@ -450,7 +453,7 @@ class RunLocalClient:
         if model_id:
             endpoint += f"?upload_id={model_id}"
 
-        response = self._make_request("GET", endpoint, debug=debug)
+        response = self._make_request("GET", endpoint)
 
         if debug:
             print(f"response: {response[:2]}")
@@ -500,7 +503,7 @@ class RunLocalClient:
             Optional[DeviceUsage]: The first matching device or None if no match found
         """
         # Verify model_id belongs to the user's models
-        user_models = self.get_models(debug=debug)
+        user_models = self.get_models()
         if model_id not in user_models:
             raise ValueError(
                 f"model_id '{model_id}' does not correspond to your available models"
@@ -576,7 +579,6 @@ class RunLocalClient:
             "POST",
             f"/coreml/benchmark/enqueue?upload_id={model_id}",
             data=data,
-            debug=debug,
         )
 
         # Extract the benchmark ID from the response
@@ -601,7 +603,7 @@ class RunLocalClient:
             time.sleep(poll_interval)
 
             try:
-                result = self.get_benchmark_by_id(benchmark_id, debug=debug)
+                result = self.get_benchmark_by_id(benchmark_id)
 
                 if result is None:
                     continue
@@ -734,9 +736,7 @@ class RunLocalClient:
 
         return result
 
-    def get_benchmark_by_id(
-        self, benchmark_id: str, debug: bool = False
-    ) -> Optional[BenchmarkDbItem]:
+    def get_benchmark_by_id(self, benchmark_id: str) -> Optional[BenchmarkDbItem]:
         """
         Get a specific benchmark by its ID
 
@@ -748,8 +748,6 @@ class RunLocalClient:
             Dict: The benchmark data
         """
         # Use the new benchmark by ID endpoint
-        respone = self._make_request(
-            "GET", f"/benchmarks/id/{benchmark_id}", debug=debug
-        )
+        respone = self._make_request("GET", f"/benchmarks/id/{benchmark_id}")
 
         return BenchmarkDbItem(**respone)
