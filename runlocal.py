@@ -655,11 +655,11 @@ class RunLocalClient:
                 print(f"Could not extract benchmark ID from response: {response}")
             raise ValueError("Could not extract benchmark ID from response")
 
-        if self.debug:
-            print(f"Waiting for benchmark {benchmark_id} to complete...")
+        print(f"Waiting for benchmark {benchmark_id} to complete...")
 
         # Poll for benchmark completion
         start_time = time.time()
+        last_status = None
 
         while time.time() - start_time < timeout:
             # Wait before checking
@@ -673,11 +673,14 @@ class RunLocalClient:
 
                 status = result.Status
 
+                # Display status if changed
+                if status != last_status:
+                    elapsed = int(time.time() - start_time)
+                    print(f"[{elapsed}s] Benchmark status: {status.value}")
+                    last_status = status
+
                 # Check if benchmark is complete
                 if status in [BenchmarkStatus.Complete, BenchmarkStatus.Failed]:
-                    if self.debug:
-                        print("Benchmark completed successfully")
-
                     # Convert the result to a JSON-friendly dictionary
                     result_dict = self._convert_benchmark_to_json_friendly(result)
 
@@ -712,7 +715,7 @@ class RunLocalClient:
                                     output_tensors_json[compute_unit][name] = {
                                         "data": tensor.tolist(),
                                         "shape": list(tensor.shape),
-                                        "dtype": str(tensor.dtype)
+                                        "dtype": str(tensor.dtype),
                                     }
                             result_dict["OutputTensors"] = output_tensors_json
 
@@ -720,20 +723,11 @@ class RunLocalClient:
 
                 # Check if benchmark failed
                 if status in [BenchmarkStatus.Failed, BenchmarkStatus.Deleted]:
-                    if self.debug:
-                        print(f"Benchmark failed: {result}")
                     raise Exception(f"Benchmark failed with status: {status}")
-
-                # Still in progress
-                if self.debug:
-                    print(f"Benchmark still in progress (status: {status}), waiting...")
             except Exception as e:
-                if "404" in str(e):
-                    # Benchmark might not be in the database yet, retry
-                    if self.debug:
-                        print("Benchmark not found yet, retrying...")
-                elif self.debug:
-                    print(f"Error checking benchmark status: {e}, retrying...")
+                if self.debug:
+                    print(f"Error checking benchmark status: {e}")
+                raise
 
         # Timeout reached
         raise TimeoutError(
@@ -936,11 +930,11 @@ class RunLocalClient:
         if not benchmark_id:
             raise ValueError("Could not extract benchmark ID from response")
 
-        if self.debug:
-            print(f"Waiting for prediction {benchmark_id} to complete...")
+        print(f"Waiting for prediction {benchmark_id} to complete...")
 
         # Poll for prediction completion
         start_time = time.time()
+        last_status = None
         compute_unit_outputs = {}
 
         while time.time() - start_time < timeout:
@@ -954,6 +948,12 @@ class RunLocalClient:
                     continue
 
                 status = result.Status
+
+                # Display status if changed
+                if status != last_status:
+                    elapsed = int(time.time() - start_time)
+                    print(f"[{elapsed}s] Prediction status: {status.value}")
+                    last_status = status
 
                 # Check if prediction is complete
                 if status == BenchmarkStatus.Complete:
@@ -974,10 +974,6 @@ class RunLocalClient:
                             )
 
                     if compute_unit_outputs:
-                        if self.debug:
-                            print(
-                                f"Prediction completed successfully. Retrieved outputs for {len(compute_unit_outputs)} compute unit(s)"
-                            )
                         return compute_unit_outputs
                     else:
                         raise Exception(
@@ -994,20 +990,10 @@ class RunLocalClient:
                             break
                     raise Exception(f"Prediction failed: {failure_reason}")
 
-                # Still in progress
-                if self.debug:
-                    print(
-                        f"Prediction still in progress (status: {status}), waiting..."
-                    )
-
             except Exception as e:
-                if "404" in str(e):
-                    # Benchmark might not be in the database yet, retry
-                    if self.debug:
-                        print("Prediction job not found yet, retrying...")
-                else:
-                    # Re-raise prediction failures
-                    raise
+                if self.debug:
+                    print(f"Error checking prediction status: {e}")
+                raise
 
         # Timeout reached
         raise TimeoutError(
