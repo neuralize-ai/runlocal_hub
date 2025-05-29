@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
 import json
+
+import numpy as np
+
 from runlocal import RunLocalClient
 
 
@@ -21,8 +24,11 @@ def main():
     client = RunLocalClient()
 
     model_path = "./HorizonAngle_exp0.mlpackage"
+    image = np.zeros([1, 3, 224, 224]).astype(np.float32)
+    inputs = {"image": image}
 
     benchmark_results = client.benchmark(
+        inputs=inputs,
         model_path=model_path,
         device_name="MacBook",
         soc="Apple M3",

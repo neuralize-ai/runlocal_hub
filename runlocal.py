@@ -594,6 +594,7 @@ class RunLocalClient:
         model_id: str,
         device: Device,
         compute_units: List[str],
+        inputs: Optional[Dict[str, np.ndarray]] = None,
         timeout=600,
         poll_interval: int = 10,
     ) -> Dict:
@@ -602,26 +603,39 @@ class RunLocalClient:
 
         Args:
             model_id: The ID of the uploaded model
-            device_id: The device identifier to benchmark on
+            device: The device to benchmark on
             compute_units: List of compute units to use for benchmarking
-            test_name: Optional name for the benchmark test
-            wait_for_results: If True, block until benchmark is complete and return results
-            timeout: Maximum time in seconds to wait for benchmark completion (default: 300s)
+            inputs: Optional dictionary mapping input names to numpy arrays
+            timeout: Maximum time in seconds to wait for benchmark completion (default: 600s)
             poll_interval: Time in seconds between status checks (default: 10s)
 
         Returns:
-            Dict: Benchmark submission info, or if wait_for_results=True, the complete benchmark results
+            Dict: The complete benchmark results
         """
 
         device_id = device.to_device_id()
+
+        # Upload input tensors if provided
+        input_tensors_id = None
+        if inputs is not None:
+            if self.debug:
+                print("Uploading input tensors for benchmark...")
+                for name, tensor in inputs.items():
+                    print(f"  {name}: shape={tensor.shape}, dtype={tensor.dtype}")
+
+            input_tensors_id = self.upload_io_tensors(inputs, io_type=IOType.INPUT)
 
         # Create the device request
         device_request = {"device_id": device_id, "compute_units": compute_units}
 
         # Prepare the data payload
-        data = {
+        data: Dict[str, Any] = {
             "device_requests": [device_request],  # Wrap in list for API compatibility
         }
+
+        # Add input tensors to the payload if provided
+        if input_tensors_id is not None:
+            data["input_tensors_id"] = input_tensors_id
 
         # Use the standard benchmark endpoint to submit the request
         response = self._make_request(
@@ -663,8 +677,46 @@ class RunLocalClient:
                 if status in [BenchmarkStatus.Complete, BenchmarkStatus.Failed]:
                     if self.debug:
                         print("Benchmark completed successfully")
+
                     # Convert the result to a JSON-friendly dictionary
-                    return self._convert_benchmark_to_json_friendly(result)
+                    result_dict = self._convert_benchmark_to_json_friendly(result)
+
+                    # If input tensors were provided, download output tensors
+                    if inputs is not None and status == BenchmarkStatus.Complete:
+                        output_tensors = {}
+                        for benchmark_data in result.BenchmarkData:
+                            if (
+                                benchmark_data.Success
+                                and benchmark_data.OutputTensorsId
+                            ):
+                                compute_unit = benchmark_data.ComputeUnit
+                                output_tensors_id = benchmark_data.OutputTensorsId
+
+                                if self.debug:
+                                    print(
+                                        f"Downloading outputs for compute unit '{compute_unit}' (tensor ID: {output_tensors_id})"
+                                    )
+
+                                # Download output tensors for this compute unit
+                                output_tensors[compute_unit] = self.download_io_tensors(
+                                    output_tensors_id
+                                )
+
+                        # Add output tensors to the result
+                        if output_tensors:
+                            # Convert numpy arrays to lists for JSON serialization
+                            output_tensors_json = {}
+                            for compute_unit, tensors in output_tensors.items():
+                                output_tensors_json[compute_unit] = {}
+                                for name, tensor in tensors.items():
+                                    output_tensors_json[compute_unit][name] = {
+                                        "data": tensor.tolist(),
+                                        "shape": list(tensor.shape),
+                                        "dtype": str(tensor.dtype)
+                                    }
+                            result_dict["OutputTensors"] = output_tensors_json
+
+                    return result_dict
 
                 # Check if benchmark failed
                 if status in [BenchmarkStatus.Failed, BenchmarkStatus.Deleted]:
@@ -1085,6 +1137,7 @@ class RunLocalClient:
         year_min: Optional[int] = None,
         year_max: Optional[int] = None,
         compute_units: Optional[List[str]] = None,
+        inputs: Optional[Dict[str, np.ndarray]] = None,
         timeout: int = 600,
         poll_interval: int = 10,
         show_progress: bool = True,
@@ -1102,6 +1155,7 @@ class RunLocalClient:
             year_min: Optional minimum year (inclusive)
             year_max: Optional maximum year (inclusive)
             compute_units: Optional list of compute units to use. If None, uses all available
+            inputs: Optional dictionary mapping input names to numpy arrays
             timeout: Maximum time in seconds to wait for completion (default: 600s)
             poll_interval: Time in seconds between status checks (default: 10s)
             show_progress: Whether to show upload progress bar (default: True)
@@ -1160,6 +1214,7 @@ class RunLocalClient:
             model_id=model_id,
             device=device_usage.device,
             compute_units=selected_compute_units,
+            inputs=inputs,
             timeout=timeout,
             poll_interval=poll_interval,
         )
