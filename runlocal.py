@@ -1150,11 +1150,10 @@ class RunLocalClient:
             compute_units if compute_units is not None else device_usage.compute_units
         )
 
-        if self.debug:
-            print(
-                f"Selected device: {device_usage.device.Name} {device_usage.device.Year} ({device_usage.device.Soc})"
-            )
-            print(f"Using compute units: {selected_compute_units}")
+        print(
+            f"Using device: {device_usage.device.Name} {device_usage.device.Year} ({device_usage.device.Soc})"
+        )
+        print(f"\twith compute units: {selected_compute_units}")
 
         # Run benchmark
         return self.benchmark_model(
@@ -1242,11 +1241,10 @@ class RunLocalClient:
             compute_units if compute_units is not None else device_usage.compute_units
         )
 
-        if self.debug:
-            print(
-                f"Selected device: {device_usage.device.Name} {device_usage.device.Year} ({device_usage.device.Soc})"
-            )
-            print(f"Using compute units: {selected_compute_units}")
+        print(
+            f"Using device: {device_usage.device.Name} {device_usage.device.Year} ({device_usage.device.Soc})"
+        )
+        print(f"\twith compute units: {selected_compute_units}")
 
         # Run prediction
         return self.predict_model(
