@@ -748,6 +748,19 @@ class RunLocalClient:
 
         except requests.exceptions.RequestException as e:
             raise Exception(f"Network error during IOTensor upload: {str(e)}")
+    def get_io_tensors_metadata(self, tensors_id: str) -> IOTensorsMetadata:
+        """
+        Get metadata about IOTensors without downloading the data
+
+        Args:
+            tensors_id: The ID of the tensors to get metadata for
+
+        Returns:
+            IOTensorsMetadata: Metadata about the tensors
+        """
+        response = self._make_request("GET", f"/io-tensors/{tensors_id}")
+        return IOTensorsMetadata(**response)
+
     def _convert_benchmark_to_json_friendly(self, benchmark: BenchmarkDbItem) -> Dict:
         """
         Convert a BenchmarkDbItem to a JSON-friendly dictionary by:
