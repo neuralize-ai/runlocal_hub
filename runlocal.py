@@ -150,8 +150,8 @@ class BenchmarkDbItem(BaseModel):
 
 
 class IOType(str, Enum):
-    INPUT = "INPUT"
-    OUTPUT = "OUTPUT"
+    INPUT = "input"
+    OUTPUT = "output"
 
 
 class JobType(str, Enum):
