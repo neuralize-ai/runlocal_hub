@@ -822,6 +822,135 @@ class RunLocalClient:
 
         response = self._make_request("GET", endpoint)
         return [IOTensorsMetadata(**item) for item in response]
+
+    def predict_model(
+        self,
+        model_id: str,
+        device: Device,
+        compute_units: List[str],
+        input_tensors: Dict[str, np.ndarray],
+        timeout: int = 600,
+        poll_interval: int = 10,
+    ) -> Dict[str, np.ndarray]:
+        """
+        Run prediction on a model with given input tensors
+
+        Args:
+            model_id: The ID of the uploaded model
+            device: The device to run prediction on
+            compute_units: List of compute units to use
+            input_tensors: Dictionary mapping input names to numpy arrays
+            timeout: Maximum time in seconds to wait for completion (default: 600s)
+            poll_interval: Time in seconds between status checks (default: 10s)
+
+        Returns:
+            Dict[str, np.ndarray]: Dictionary mapping output names to numpy arrays
+        """
+        # Upload input tensors
+        if self.debug:
+            print("Uploading input tensors...")
+            for name, tensor in input_tensors.items():
+                print(f"  {name}: shape={tensor.shape}, dtype={tensor.dtype}")
+
+        input_tensors_id = self.upload_io_tensors(input_tensors, io_type=IOType.INPUT)
+
+        # Create device ID
+        device_id = device.to_device_id()
+
+        # Create the device request
+        device_request = {"device_id": device_id, "compute_units": compute_units}
+
+        # Prepare the data payload for prediction job
+        data = {
+            "device_requests": [device_request],
+            "input_tensors_id": input_tensors_id,
+            "job_type": JobType.PREDICTION.value,
+        }
+
+        # Submit the prediction job
+        response = self._make_request(
+            "POST",
+            f"/coreml/benchmark/enqueue?upload_id={model_id}",
+            data=data,
+        )
+
+        # Extract the benchmark ID
+        benchmark_id = response[0]
+
+        if self.debug:
+            print(f"Prediction job submitted with ID: {benchmark_id}")
+
+        if not benchmark_id:
+            raise ValueError("Could not extract benchmark ID from response")
+
+        if self.debug:
+            print(f"Waiting for prediction {benchmark_id} to complete...")
+
+        # Poll for prediction completion
+        start_time = time.time()
+        output_tensors_id = None
+
+        while time.time() - start_time < timeout:
+            # Wait before checking
+            time.sleep(poll_interval)
+
+            try:
+                result = self.get_benchmark_by_id(benchmark_id)
+
+                if result is None:
+                    continue
+
+                status = result.Status
+
+                # Check if prediction is complete
+                if status == BenchmarkStatus.Complete:
+                    # Extract output tensor ID from benchmark data
+                    for benchmark_data in result.BenchmarkData:
+                        if benchmark_data.Success:
+                            output_tensors_id = benchmark_data.OutputTensorsId
+
+                    if output_tensors_id:
+                        if self.debug:
+                            print(
+                                f"Prediction completed successfully. Output tensor ID: {output_tensors_id}"
+                            )
+                        # Download and return output tensors
+                        return self.download_io_tensors(output_tensors_id)
+                    else:
+                        raise Exception(
+                            "Prediction completed but no output tensors found"
+                        )
+
+                # Check if prediction failed
+                elif status in [BenchmarkStatus.Failed, BenchmarkStatus.Deleted]:
+                    # Get failure reason
+                    failure_reason = "Unknown failure"
+                    for benchmark_data in result.BenchmarkData:
+                        if benchmark_data.FailureReason:
+                            failure_reason = benchmark_data.FailureReason
+                            break
+                    raise Exception(f"Prediction failed: {failure_reason}")
+
+                # Still in progress
+                if self.debug:
+                    print(
+                        f"Prediction still in progress (status: {status}), waiting..."
+                    )
+
+            except Exception as e:
+                if "404" in str(e):
+                    # Benchmark might not be in the database yet, retry
+                    if self.debug:
+                        print("Prediction job not found yet, retrying...")
+                else:
+                    # Re-raise prediction failures
+                    raise
+
+        # Timeout reached
+        raise TimeoutError(
+            f"Prediction did not complete within {timeout} seconds timeout"
+        )
+
     def _convert_benchmark_to_json_friendly(self, benchmark: BenchmarkDbItem) -> Dict:
         """
         Convert a BenchmarkDbItem to a JSON-friendly dictionary by:
