@@ -591,7 +591,7 @@ class RunLocalClient:
         if len(devices) > 0:
             return devices[0]
 
-    def benchmark_models(
+    def benchmark_devices(
         self,
         model_id: str,
         devices: List[DeviceUsage],
@@ -654,7 +654,7 @@ class RunLocalClient:
         if self.debug:
             print(f"Benchmarks submitted with IDs: {benchmark_ids}")
 
-        print(f"Waiting for {len(benchmark_ids)} benchmarks to complete...")
+        print(f"Waiting for {len(benchmark_ids)} benchmark(s) to complete...")
 
         # Poll for benchmark completion
         start_time = time.time()
@@ -743,7 +743,7 @@ class RunLocalClient:
 
         return results
 
-    def benchmark_model(
+    def benchmark_device(
         self,
         model_id: str,
         device: Device,
@@ -768,7 +768,7 @@ class RunLocalClient:
         """
         # Create a DeviceUsage object and use the multi-device method
         device_usage = DeviceUsage(device=device, compute_units=compute_units)
-        results = self.benchmark_models(
+        results = self.benchmark_devices(
             model_id=model_id,
             devices=[device_usage],
             inputs=inputs,
@@ -918,7 +918,7 @@ class RunLocalClient:
         response = self._make_request("GET", endpoint)
         return [IOTensorsMetadata(**item) for item in response]
 
-    def predict_models(
+    def predict_devices(
         self,
         model_id: str,
         devices: List[DeviceUsage],
@@ -977,7 +977,7 @@ class RunLocalClient:
         if self.debug:
             print(f"Prediction jobs submitted with IDs: {benchmark_ids}")
 
-        print(f"Waiting for {len(benchmark_ids)} predictions to complete...")
+        print(f"Waiting for {len(benchmark_ids)} prediction(s) to complete...")
 
         # Poll for prediction completion
         start_time = time.time()
@@ -1085,7 +1085,7 @@ class RunLocalClient:
 
         return results
 
-    def predict_model(
+    def predict_device(
         self,
         model_id: str,
         device: Device,
@@ -1110,7 +1110,7 @@ class RunLocalClient:
         """
         # Create a DeviceUsage object and use the multi-device method
         device_usage = DeviceUsage(device=device, compute_units=compute_units)
-        results = self.predict_models(
+        results = self.predict_devices(
             model_id=model_id,
             devices=[device_usage],
             input_tensors=input_tensors,
@@ -1339,7 +1339,7 @@ class RunLocalClient:
         # Run benchmarks
         if len(devices) == 1:
             # Single device - use the original method for backward compatibility
-            return self.benchmark_model(
+            return self.benchmark_device(
                 model_id=model_id,
                 device=devices[0].device,
                 compute_units=devices[0].compute_units,
@@ -1349,7 +1349,7 @@ class RunLocalClient:
             )
         else:
             # Multiple devices - use the new method
-            return self.benchmark_models(
+            return self.benchmark_devices(
                 model_id=model_id,
                 devices=devices,
                 inputs=inputs,
@@ -1462,7 +1462,7 @@ class RunLocalClient:
         # Run predictions
         if len(devices) == 1:
             # Single device - use the original method for backward compatibility
-            return self.predict_model(
+            return self.predict_device(
                 model_id=model_id,
                 device=devices[0].device,
                 compute_units=devices[0].compute_units,
@@ -1472,7 +1472,7 @@ class RunLocalClient:
             )
         else:
             # Multiple devices - use the new method
-            return self.predict_models(
+            return self.predict_devices(
                 model_id=model_id,
                 devices=devices,
                 input_tensors=inputs,
