@@ -748,6 +748,7 @@ class RunLocalClient:
 
         except requests.exceptions.RequestException as e:
             raise Exception(f"Network error during IOTensor upload: {str(e)}")
+
     def get_io_tensors_metadata(self, tensors_id: str) -> IOTensorsMetadata:
         """
         Get metadata about IOTensors without downloading the data
@@ -831,7 +832,7 @@ class RunLocalClient:
         input_tensors: Dict[str, np.ndarray],
         timeout: int = 600,
         poll_interval: int = 10,
-    ) -> Dict[str, np.ndarray]:
+    ) -> Dict[str, Dict[str, np.ndarray]]:
         """
         Run prediction on a model with given input tensors
 
@@ -844,7 +845,7 @@ class RunLocalClient:
             poll_interval: Time in seconds between status checks (default: 10s)
 
         Returns:
-            Dict[str, np.ndarray]: Dictionary mapping output names to numpy arrays
+            Dict[str, Dict[str, np.ndarray]]: Dictionary mapping compute unit names to output tensors
         """
         # Upload input tensors
         if self.debug:
@@ -888,7 +889,7 @@ class RunLocalClient:
 
         # Poll for prediction completion
         start_time = time.time()
-        output_tensors_id = None
+        compute_unit_outputs = {}
 
         while time.time() - start_time < timeout:
             # Wait before checking
@@ -904,18 +905,28 @@ class RunLocalClient:
 
                 # Check if prediction is complete
                 if status == BenchmarkStatus.Complete:
-                    # Extract output tensor ID from benchmark data
+                    # Extract output tensor IDs from all compute units
                     for benchmark_data in result.BenchmarkData:
-                        if benchmark_data.Success:
+                        if benchmark_data.Success and benchmark_data.OutputTensorsId:
+                            compute_unit = benchmark_data.ComputeUnit
                             output_tensors_id = benchmark_data.OutputTensorsId
 
-                    if output_tensors_id:
+                            if self.debug:
+                                print(
+                                    f"Downloading outputs for compute unit '{compute_unit}' (tensor ID: {output_tensors_id})"
+                                )
+
+                            # Download output tensors for this compute unit
+                            compute_unit_outputs[compute_unit] = (
+                                self.download_io_tensors(output_tensors_id)
+                            )
+
+                    if compute_unit_outputs:
                         if self.debug:
                             print(
-                                f"Prediction completed successfully. Output tensor ID: {output_tensors_id}"
+                                f"Prediction completed successfully. Retrieved outputs for {len(compute_unit_outputs)} compute unit(s)"
                             )
-                        # Download and return output tensors
-                        return self.download_io_tensors(output_tensors_id)
+                        return compute_unit_outputs
                     else:
                         raise Exception(
                             "Prediction completed but no output tensors found"
