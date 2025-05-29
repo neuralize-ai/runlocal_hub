@@ -1,3 +1,4 @@
+import io
 import json
 import os
 import tempfile
@@ -78,6 +79,8 @@ class BenchmarkData(BaseModel):
     FailureError: Optional[str] = None
     Stdout: Optional[str] = None
     Stderr: Optional[str] = None
+
+    OutputTensorsId: Optional[str] = None
 
     def to_json_dict(self) -> Dict:
         """
