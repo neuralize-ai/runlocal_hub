@@ -8,6 +8,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
+import numpy as np
 import requests
 from pydantic import BaseModel
 from tqdm import tqdm
@@ -143,6 +144,32 @@ class BenchmarkDbItem(BaseModel):
     def to_dict(self):
         d = self.dict()
         return d
+
+
+class IOType(str, Enum):
+    INPUT = "INPUT"
+    OUTPUT = "OUTPUT"
+
+
+class JobType(str, Enum):
+    BENCHMARK = "BENCHMARK"
+    PREDICTION = "PREDICTION"
+
+
+class TensorInfo(BaseModel):
+    shape: List[int]
+    dtype: str
+    size: int
+
+
+class IOTensorsMetadata(BaseModel):
+    UserId: str
+    Id: str
+    IOType: IOType
+    TensorMetadata: Dict[str, TensorInfo]
+    SourceBenchmarkIds: Optional[List[str]] = None
+    CreatedUtc: str
+    UpdatedUtc: str
 
 
 class RunLocalClient:
