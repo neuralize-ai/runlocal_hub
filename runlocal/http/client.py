@@ -195,8 +195,8 @@ class HTTPClient:
                 line_str = line.decode("utf-8")
                 if line_str.startswith("data: "):
                     try:
-                        data = json.loads(line_str[6:])
-                        yield data
+                        message_data = json.loads(line_str[6:])
+                        yield message_data
                     except json.JSONDecodeError:
                         if self.debug:
                             print(f"Failed to parse SSE message: {line_str}")
@@ -284,4 +284,3 @@ class HTTPClient:
 
         except requests.exceptions.RequestException as e:
             raise Exception(f"Network error during download: {str(e)}")
-
