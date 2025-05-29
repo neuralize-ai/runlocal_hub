@@ -688,6 +688,66 @@ class RunLocalClient:
             f"Benchmark did not complete within {timeout} seconds timeout"
         )
 
+    def upload_io_tensors(
+        self,
+        tensors: Dict[str, np.ndarray],
+        io_type: IOType = IOType.INPUT,
+        source_benchmark_id: Optional[str] = None,
+    ) -> str:
+        """
+        Upload numpy arrays as IOTensors
+
+        Args:
+            tensors: Dictionary mapping tensor names to numpy arrays
+            io_type: Whether these are input or output tensors
+            source_benchmark_id: For output tensors, the benchmark that created them
+
+        Returns:
+            str: The tensors_id (hash) of the uploaded tensors
+        """
+        # Create NPZ file in memory
+        npz_buffer = io.BytesIO()
+        np.savez_compressed(npz_buffer, **tensors)
+        npz_buffer.seek(0)
+
+        # Prepare the request
+        url = f"{self.base_url}/io-tensors/upload"
+        params = {"io_type": io_type.value}
+        if source_benchmark_id:
+            params["source_benchmark_id"] = source_benchmark_id
+
+        # Upload the NPZ file
+        files = {"file": ("tensors.npz", npz_buffer, "application/octet-stream")}
+
+        try:
+            response = requests.post(
+                url,
+                params=params,
+                files=files,
+                headers=self.headers,
+            )
+
+            if response.status_code != 200:
+                error_detail = response.text
+                try:
+                    error_json = response.json()
+                    error_detail = error_json.get("detail", response.text)
+                except:
+                    pass
+                raise Exception(
+                    f"IOTensor upload failed with status {response.status_code}: {error_detail}"
+                )
+
+            result = response.json()
+            tensors_id = result["tensors_id"]
+
+            if self.debug:
+                print(f"IOTensors uploaded successfully with ID: {tensors_id}")
+
+            return tensors_id
+
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Network error during IOTensor upload: {str(e)}")
     def _convert_benchmark_to_json_friendly(self, benchmark: BenchmarkDbItem) -> Dict:
         """
         Convert a BenchmarkDbItem to a JSON-friendly dictionary by:
