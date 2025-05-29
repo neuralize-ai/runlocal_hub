@@ -804,6 +804,24 @@ class RunLocalClient:
         except requests.exceptions.RequestException as e:
             raise Exception(f"Network error during IOTensor download: {str(e)}")
 
+    def list_io_tensors(
+        self, io_type: Optional[IOType] = None
+    ) -> List[IOTensorsMetadata]:
+        """
+        List all IOTensors for the authenticated user
+
+        Args:
+            io_type: Optional filter by input or output type
+
+        Returns:
+            List[IOTensorsMetadata]: List of tensor metadata
+        """
+        endpoint = "/io-tensors"
+        if io_type:
+            endpoint += f"?io_type={io_type.value}"
+
+        response = self._make_request("GET", endpoint)
+        return [IOTensorsMetadata(**item) for item in response]
     def _convert_benchmark_to_json_friendly(self, benchmark: BenchmarkDbItem) -> Dict:
         """
         Convert a BenchmarkDbItem to a JSON-friendly dictionary by:
