@@ -26,14 +26,12 @@ class RunLocalClient:
     Simplified Python client for the RunLocal API.
     """
 
-    # DEFAULT_BASE_URL = "https://neuralize-bench.com"
-    DEFAULT_BASE_URL = "http://127.0.0.1:8000"  # Local development
+    # BASE_URL = "https://neuralize-bench.com"
+    BASE_URL = "http://127.0.0.1:8000"  # Local development
     ENV_VAR_NAME = "RUNLOCAL_API_KEY"
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        base_url: Optional[str] = None,
         debug: bool = False,
     ):
         """
@@ -44,20 +42,16 @@ class RunLocalClient:
             base_url: Base URL for the API. Defaults to production URL
             debug: Enable debug logging
         """
-        # Get API key from parameter or environment
-        if api_key is None:
-            api_key = os.environ.get(self.ENV_VAR_NAME)
-            if not api_key:
-                raise RunLocalError(
-                    f"{self.ENV_VAR_NAME} not found. Please provide an API key or set the environment variable."
-                )
-
-        # Set base URL
-        if base_url is None:
-            base_url = self.DEFAULT_BASE_URL
+        api_key = os.environ.get(self.ENV_VAR_NAME)
+        if not api_key:
+            raise RunLocalError(
+                f"{self.ENV_VAR_NAME} not found. Please provide an API key or set the environment variable."
+            )
 
         # Initialize HTTP client
-        self.http_client = HTTPClient(base_url=base_url, api_key=api_key, debug=debug)
+        self.http_client = HTTPClient(
+            base_url=self.BASE_URL, api_key=api_key, debug=debug
+        )
         self.debug = debug
 
         # Initialize components
