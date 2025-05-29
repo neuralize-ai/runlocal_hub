@@ -21,10 +21,6 @@ def print_json(title, data):
 def main():
     client = RunLocalClient()
 
-    # Get models
-    model_ids = client.get_models()
-    print_json("Your Models", {"models": model_ids})
-
     model_path = "./HorizonAngle_exp0.mlpackage"
 
     model_id = client.upload_model(model_path)
