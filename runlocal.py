@@ -160,9 +160,11 @@ class JobType(str, Enum):
 
 
 class TensorInfo(BaseModel):
-    shape: List[int]
-    dtype: str
-    size: int
+    """Information about a single tensor"""
+
+    Shape: List[int]
+    Dtype: str
+    SizeBytes: int
 
 
 class IOTensorsMetadata(BaseModel):
