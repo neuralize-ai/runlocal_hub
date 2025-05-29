@@ -155,8 +155,8 @@ class IOType(str, Enum):
 
 
 class JobType(str, Enum):
-    BENCHMARK = "BENCHMARK"
-    PREDICTION = "PREDICTION"
+    BENCHMARK = "benchmark"
+    PREDICTION = "prediction"
 
 
 class TensorInfo(BaseModel):
