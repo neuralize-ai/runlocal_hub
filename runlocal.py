@@ -174,7 +174,6 @@ class IOTensorsMetadata(BaseModel):
     TensorMetadata: Dict[str, TensorInfo]
     SourceBenchmarkIds: Optional[List[str]] = None
     CreatedUtc: str
-    UpdatedUtc: str
 
 
 class RunLocalClient:
