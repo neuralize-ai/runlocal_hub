@@ -471,9 +471,11 @@ class RunLocalClient:
         model_id: str,
         count: Optional[int] = None,
         device_name: Optional[str] = None,
-        ram: Optional[int] = None,
+        ram_min: Optional[int] = None,
+        ram_max: Optional[int] = None,
         soc: Optional[str] = None,
-        year: Optional[int] = None,
+        year_min: Optional[int] = None,
+        year_max: Optional[int] = None,
     ) -> List[DeviceUsage]:
         """
         Select a device based on optional criteria. Returns the first matching device.
@@ -482,9 +484,11 @@ class RunLocalClient:
             model_id: Required ID of a model to get compatible devices
             count: Number of devices to select
             device_name: Optional device name to filter by (e.g. "MacBookPro")
-            ram: Optional RAM amount to filter by (e.g. 16)
+            ram_min: Optional minimum RAM amount (inclusive)
+            ram_max: Optional maximum RAM amount (inclusive)
             soc: Optional SoC to filter by (e.g. "Apple M2 Pro")
-            year: Optional year to filter by (e.g. 2023)
+            year_min: Optional minimum year (inclusive)
+            year_max: Optional maximum year (inclusive)
 
         Returns:
             Optional[DeviceUsage]: The first matching device or None if no match found
@@ -509,11 +513,17 @@ class RunLocalClient:
         if soc is not None:
             devices = [d for d in devices if soc in d.device.Soc]
 
-        if ram is not None:
-            devices = [d for d in devices if d.device.Ram == ram]
+        if ram_min is not None:
+            devices = [d for d in devices if d.device.Ram >= ram_min]
 
-        if year is not None:
-            devices = [d for d in devices if d.device.Year == year]
+        if ram_max is not None:
+            devices = [d for d in devices if d.device.Ram <= ram_max]
+
+        if year_min is not None:
+            devices = [d for d in devices if d.device.Year >= year_min]
+
+        if year_max is not None:
+            devices = [d for d in devices if d.device.Year <= year_max]
 
         num_devices = len(devices)
         if self.debug:
@@ -528,17 +538,21 @@ class RunLocalClient:
         self,
         model_id: str,
         device_name: Optional[str] = None,
-        ram: Optional[int] = None,
+        ram_min: Optional[int] = None,
+        ram_max: Optional[int] = None,
         soc: Optional[str] = None,
-        year: Optional[int] = None,
+        year_min: Optional[int] = None,
+        year_max: Optional[int] = None,
     ) -> Optional[DeviceUsage]:
         devices = self.select_devices(
             model_id=model_id,
             count=1,
             device_name=device_name,
-            ram=ram,
+            ram_min=ram_min,
+            ram_max=ram_max,
             soc=soc,
-            year=year,
+            year_min=year_min,
+            year_max=year_max,
         )
 
         if len(devices) > 0:
