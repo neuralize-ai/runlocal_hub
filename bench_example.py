@@ -11,13 +11,30 @@ def print_json(title, data):
     """Helper function to pretty-print JSON data"""
     print(f"\n=== {title} ===")
     try:
-        # Use the custom encoder for JSON serialization
-        json_str = json.dumps(data, indent=4)
+        # Convert numpy arrays to JSON-serializable format
+        data_copy = convert_numpy_to_json(data)
+        json_str = json.dumps(data_copy, indent=4)
         print(json_str)
     except Exception as e:
         print(f"Error serializing JSON: {e}")
 
     print()
+
+
+def convert_numpy_to_json(obj):
+    """Recursively convert numpy arrays to JSON-serializable format"""
+    if isinstance(obj, np.ndarray):
+        return {
+            "data": obj.tolist(),
+            "shape": list(obj.shape),
+            "dtype": str(obj.dtype),
+        }
+    elif isinstance(obj, dict):
+        return {k: convert_numpy_to_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_numpy_to_json(item) for item in obj]
+    else:
+        return obj
 
 
 def main():

@@ -716,17 +716,7 @@ class RunLocalClient:
 
                             # Add output tensors to the result
                             if output_tensors:
-                                # Convert numpy arrays to lists for JSON serialization
-                                output_tensors_json = {}
-                                for compute_unit, tensors in output_tensors.items():
-                                    output_tensors_json[compute_unit] = {}
-                                    for name, tensor in tensors.items():
-                                        output_tensors_json[compute_unit][name] = {
-                                            "data": tensor.tolist(),
-                                            "shape": list(tensor.shape),
-                                            "dtype": str(tensor.dtype),
-                                        }
-                                result_dict["OutputTensors"] = output_tensors_json
+                                result_dict["OutputTensors"] = output_tensors
 
                         results.append(result_dict)
                         completed_ids.add(benchmark_id)
