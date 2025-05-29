@@ -22,22 +22,29 @@ def main():
     client = RunLocalClient()
 
     # Get models
-    # model_ids = client.get_models()
-    # print_json("Your Models", {"models": model_ids})
+    model_ids = client.get_models()
+    print_json("Your Models", {"models": model_ids})
 
-    model_id = "76bc0f19c9f38fbe2d76068f5048b1d8"
+    model_path = "./HorizonAngle_exp0.mlpackage"
+
+    model_id = client.upload_model(model_path)
+
+    print(f"model_id: {model_id}")
 
     # Simply select a device based on criteria
     print("\n=== Selecting a device for benchmarking ===")
     device_usage = client.select_device(
         model_id=model_id,
         device_name="MacBook",  # Optional: Filter by device name
-        soc="Apple M4",  # Optional: Filter by SoC
-        # ram=16,  # Optional: Filter by RAM amount
+        soc="Apple M3",  # Optional: Filter by SoC
+        ram_min=18,  # Optional: Minimum RAM amount (inclusive)
+        ram_max=18,  # Optional: Maximum RAM amount (inclusive)
+        # year_min=2023,  # Optional: Minimum year (inclusive)
     )
 
     if not device_usage:
-        print("No matching device found. Exiting.")
+        print("No matching device found.")
+
         sys.exit(1)
 
     print(
@@ -60,8 +67,10 @@ def main():
     except TimeoutError as e:
         print(f"Benchmark timed out: {e}")
         print("This is expected if benchmarks take longer than the timeout period")
+        return
     except Exception as e:
         print(f"Benchmark error: {e}")
+        return
 
     print("\nBenchmark completed successfully!")
 
