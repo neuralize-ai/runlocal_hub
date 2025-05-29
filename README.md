@@ -26,4 +26,4 @@ You'll need an API key to use the RunLocal API. You can generate one in the RunL
 export RUNLOCAL_API_KEY=<your_api_key>
 ```
 
-See `example.py` for a complete example of using the client library.
+See `bench_example.py` and `predict_example.py` for a simple usage examples.
