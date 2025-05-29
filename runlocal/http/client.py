@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, Iterator, Optional
+from typing import Any, Dict, Iterator, Optional, Union
 
 import requests
 
@@ -28,7 +28,7 @@ class HTTPClient:
         self,
         method: str,
         endpoint: str,
-        data: Optional[Dict] = None,
+        data: Optional[Union[Dict, bytes]] = None,
         params: Optional[Dict] = None,
         stream: bool = False,
     ) -> Any:
@@ -104,7 +104,7 @@ class HTTPClient:
                 except:
                     if response.text:
                         error_msg = f"{error_msg}: {response.text}"
-                
+
                 # Raise specific exceptions based on status code
                 if response.status_code == 401:
                     raise AuthenticationError("Invalid API key or unauthorized access")
@@ -175,9 +175,7 @@ class HTTPClient:
         Raises:
             Exception: For upload errors
         """
-        response = self.request(
-            "POST", endpoint, data=data, params=params, stream=True
-        )
+        response = self.request("POST", endpoint, data=data, params=params, stream=True)
 
         # Check initial response status
         if response.status_code != 200:
@@ -286,3 +284,4 @@ class HTTPClient:
 
         except requests.exceptions.RequestException as e:
             raise Exception(f"Network error during download: {str(e)}")
+
