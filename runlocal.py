@@ -181,7 +181,8 @@ class RunLocalClient:
     Python client for the RunLocal API
     """
 
-    base_url = "https://neuralize-bench.com"
+    # base_url = "https://neuralize-bench.com"
+    base_url = "http://127.0.0.1:8000"
     env_var_name = "RUNLOCAL_API_KEY"
 
     def __init__(self, debug=False):
@@ -500,7 +501,7 @@ class RunLocalClient:
     def select_devices(
         self,
         model_id: str,
-        count: Optional[int] = None,
+        count: Optional[int] = 1,
         device_name: Optional[str] = None,
         ram_min: Optional[int] = None,
         ram_max: Optional[int] = None,
@@ -509,11 +510,11 @@ class RunLocalClient:
         year_max: Optional[int] = None,
     ) -> List[DeviceUsage]:
         """
-        Select a device based on optional criteria. Returns the first matching device.
+        Select devices based on optional criteria.
 
         Args:
             model_id: Required ID of a model to get compatible devices
-            count: Number of devices to select
+            count: Number of devices to select (default: 1, 0 = all matching devices)
             device_name: Optional device name to filter by (e.g. "MacBookPro")
             ram_min: Optional minimum RAM amount (inclusive)
             ram_max: Optional maximum RAM amount (inclusive)
@@ -522,7 +523,7 @@ class RunLocalClient:
             year_max: Optional maximum year (inclusive)
 
         Returns:
-            Optional[DeviceUsage]: The first matching device or None if no match found
+            List[DeviceUsage]: List of matching devices
         """
         # Verify model_id belongs to the user's models
         user_models = self.get_models()
@@ -560,7 +561,8 @@ class RunLocalClient:
         if self.debug:
             print(f"Found {num_devices} matching devices")
 
-        if count is not None and num_devices > count:
+        # Apply count logic: 0 means all devices, otherwise limit to count
+        if count is not None and count > 0 and num_devices > count:
             devices = devices[:count]
 
         return devices
@@ -589,6 +591,168 @@ class RunLocalClient:
         if len(devices) > 0:
             return devices[0]
 
+    def benchmark_models(
+        self,
+        model_id: str,
+        devices: List[DeviceUsage],
+        inputs: Optional[Dict[str, np.ndarray]] = None,
+        timeout=600,
+        poll_interval: int = 10,
+    ) -> List[Dict]:
+        """
+        Benchmark a model on multiple devices
+
+        Args:
+            model_id: The ID of the uploaded model
+            devices: List of DeviceUsage objects containing devices and their compute units
+            inputs: Optional dictionary mapping input names to numpy arrays
+            timeout: Maximum time in seconds to wait for all benchmarks (default: 600s)
+            poll_interval: Time in seconds between status checks (default: 10s)
+
+        Returns:
+            List[Dict]: List of benchmark results for each device
+        """
+        # Upload input tensors once if provided
+        input_tensors_id = None
+        if inputs is not None:
+            if self.debug:
+                print("Uploading input tensors for benchmarks...")
+                for name, tensor in inputs.items():
+                    print(f"  {name}: shape={tensor.shape}, dtype={tensor.dtype}")
+
+            input_tensors_id = self.upload_io_tensors(inputs, io_type=IOType.INPUT)
+
+        # Create device requests for all devices
+        device_requests = []
+        for device_usage in devices:
+            device_id = device_usage.device.to_device_id()
+            device_request = {
+                "device_id": device_id,
+                "compute_units": device_usage.compute_units,
+            }
+            device_requests.append(device_request)
+
+        # Prepare the data payload
+        data: Dict[str, Any] = {
+            "device_requests": device_requests,
+        }
+
+        # Add input tensors to the payload if provided
+        if input_tensors_id is not None:
+            data["input_tensors_id"] = input_tensors_id
+
+        # Submit all benchmarks at once
+        response = self._make_request(
+            "POST",
+            f"/coreml/benchmark/enqueue?upload_id={model_id}",
+            data=data,
+        )
+
+        # Extract benchmark IDs from the response
+        benchmark_ids = response
+
+        if self.debug:
+            print(f"Benchmarks submitted with IDs: {benchmark_ids}")
+
+        print(f"Waiting for {len(benchmark_ids)} benchmarks to complete...")
+
+        # Poll for benchmark completion
+        start_time = time.time()
+        results = []
+        completed_ids = set()
+
+        while time.time() - start_time < timeout:
+            # Check each benchmark
+            all_complete = True
+
+            for i, benchmark_id in enumerate(benchmark_ids):
+                if benchmark_id in completed_ids:
+                    continue
+
+                try:
+                    result = self.get_benchmark_by_id(benchmark_id)
+
+                    if result is None:
+                        all_complete = False
+                        continue
+
+                    status = result.Status
+
+                    # Check if benchmark is complete
+                    if status in [BenchmarkStatus.Complete, BenchmarkStatus.Failed]:
+                        elapsed = int(time.time() - start_time)
+                        device_name = (
+                            devices[i].device.Name
+                            if i < len(devices)
+                            else f"Device {i}"
+                        )
+                        print(
+                            f"[{elapsed}s] Benchmark {i + 1}/{len(benchmark_ids)} ({device_name}) completed with status: {status.value}"
+                        )
+
+                        # Convert the result to a JSON-friendly dictionary
+                        result_dict = self._convert_benchmark_to_json_friendly(result)
+
+                        # If input tensors were provided, download output tensors
+                        if inputs is not None and status == BenchmarkStatus.Complete:
+                            output_tensors = {}
+                            for benchmark_data in result.BenchmarkData:
+                                if (
+                                    benchmark_data.Success
+                                    and benchmark_data.OutputTensorsId
+                                ):
+                                    compute_unit = benchmark_data.ComputeUnit
+                                    output_tensors_id = benchmark_data.OutputTensorsId
+
+                                    if self.debug:
+                                        print(
+                                            f"Downloading outputs for compute unit '{compute_unit}' (tensor ID: {output_tensors_id})"
+                                        )
+
+                                    # Download output tensors for this compute unit
+                                    output_tensors[compute_unit] = (
+                                        self.download_io_tensors(output_tensors_id)
+                                    )
+
+                            # Add output tensors to the result
+                            if output_tensors:
+                                # Convert numpy arrays to lists for JSON serialization
+                                output_tensors_json = {}
+                                for compute_unit, tensors in output_tensors.items():
+                                    output_tensors_json[compute_unit] = {}
+                                    for name, tensor in tensors.items():
+                                        output_tensors_json[compute_unit][name] = {
+                                            "data": tensor.tolist(),
+                                            "shape": list(tensor.shape),
+                                            "dtype": str(tensor.dtype),
+                                        }
+                                result_dict["OutputTensors"] = output_tensors_json
+
+                        results.append(result_dict)
+                        completed_ids.add(benchmark_id)
+                    else:
+                        all_complete = False
+
+                except Exception as e:
+                    if self.debug:
+                        print(f"Error checking benchmark {benchmark_id} status: {e}")
+                    # Continue checking other benchmarks
+                    all_complete = False
+
+            if all_complete:
+                break
+
+            # Wait before checking again
+            time.sleep(poll_interval)
+
+        # Check if all benchmarks completed
+        if len(results) < len(benchmark_ids):
+            print(
+                f"Warning: Only {len(results)}/{len(benchmark_ids)} benchmarks completed within timeout"
+            )
+
+        return results
+
     def benchmark_model(
         self,
         model_id: str,
@@ -612,127 +776,21 @@ class RunLocalClient:
         Returns:
             Dict: The complete benchmark results
         """
-
-        device_id = device.to_device_id()
-
-        # Upload input tensors if provided
-        input_tensors_id = None
-        if inputs is not None:
-            if self.debug:
-                print("Uploading input tensors for benchmark...")
-                for name, tensor in inputs.items():
-                    print(f"  {name}: shape={tensor.shape}, dtype={tensor.dtype}")
-
-            input_tensors_id = self.upload_io_tensors(inputs, io_type=IOType.INPUT)
-
-        # Create the device request
-        device_request = {"device_id": device_id, "compute_units": compute_units}
-
-        # Prepare the data payload
-        data: Dict[str, Any] = {
-            "device_requests": [device_request],  # Wrap in list for API compatibility
-        }
-
-        # Add input tensors to the payload if provided
-        if input_tensors_id is not None:
-            data["input_tensors_id"] = input_tensors_id
-
-        # Use the standard benchmark endpoint to submit the request
-        response = self._make_request(
-            "POST",
-            f"/coreml/benchmark/enqueue?upload_id={model_id}",
-            data=data,
+        # Create a DeviceUsage object and use the multi-device method
+        device_usage = DeviceUsage(device=device, compute_units=compute_units)
+        results = self.benchmark_models(
+            model_id=model_id,
+            devices=[device_usage],
+            inputs=inputs,
+            timeout=timeout,
+            poll_interval=poll_interval,
         )
 
-        # Extract the benchmark ID from the response
-        benchmark_id = response[0]
-
-        if self.debug:
-            print(f"Benchmark submitted with ID: {benchmark_id}")
-
-        if not benchmark_id:
-            if self.debug:
-                print(f"Could not extract benchmark ID from response: {response}")
-            raise ValueError("Could not extract benchmark ID from response")
-
-        print(f"Waiting for benchmark {benchmark_id} to complete...")
-
-        # Poll for benchmark completion
-        start_time = time.time()
-        last_status = None
-
-        while time.time() - start_time < timeout:
-            # Wait before checking
-            time.sleep(poll_interval)
-
-            try:
-                result = self.get_benchmark_by_id(benchmark_id)
-
-                if result is None:
-                    continue
-
-                status = result.Status
-
-                # Display status if changed
-                if status != last_status:
-                    elapsed = int(time.time() - start_time)
-                    print(f"[{elapsed}s] Benchmark status: {status.value}")
-                    last_status = status
-
-                # Check if benchmark is complete
-                if status in [BenchmarkStatus.Complete, BenchmarkStatus.Failed]:
-                    # Convert the result to a JSON-friendly dictionary
-                    result_dict = self._convert_benchmark_to_json_friendly(result)
-
-                    # If input tensors were provided, download output tensors
-                    if inputs is not None and status == BenchmarkStatus.Complete:
-                        output_tensors = {}
-                        for benchmark_data in result.BenchmarkData:
-                            if (
-                                benchmark_data.Success
-                                and benchmark_data.OutputTensorsId
-                            ):
-                                compute_unit = benchmark_data.ComputeUnit
-                                output_tensors_id = benchmark_data.OutputTensorsId
-
-                                if self.debug:
-                                    print(
-                                        f"Downloading outputs for compute unit '{compute_unit}' (tensor ID: {output_tensors_id})"
-                                    )
-
-                                # Download output tensors for this compute unit
-                                output_tensors[compute_unit] = self.download_io_tensors(
-                                    output_tensors_id
-                                )
-
-                        # Add output tensors to the result
-                        if output_tensors:
-                            # Convert numpy arrays to lists for JSON serialization
-                            output_tensors_json = {}
-                            for compute_unit, tensors in output_tensors.items():
-                                output_tensors_json[compute_unit] = {}
-                                for name, tensor in tensors.items():
-                                    output_tensors_json[compute_unit][name] = {
-                                        "data": tensor.tolist(),
-                                        "shape": list(tensor.shape),
-                                        "dtype": str(tensor.dtype),
-                                    }
-                            result_dict["OutputTensors"] = output_tensors_json
-
-                    return result_dict
-
-                # Check if benchmark failed
-                if status in [BenchmarkStatus.Failed, BenchmarkStatus.Deleted]:
-                    raise Exception(f"Benchmark failed with status: {status}")
-            except Exception as e:
-                if self.debug:
-                    print(f"Error checking benchmark status: {e}")
-                raise
-
-        # Timeout reached
-        raise TimeoutError(
-            f"Benchmark did not complete within {timeout} seconds timeout"
-        )
+        # Return the first (and only) result
+        if results:
+            return results[0]
+        else:
+            raise Exception("No benchmark results returned")
 
     def upload_io_tensors(
         self,
@@ -870,6 +928,173 @@ class RunLocalClient:
         response = self._make_request("GET", endpoint)
         return [IOTensorsMetadata(**item) for item in response]
 
+    def predict_models(
+        self,
+        model_id: str,
+        devices: List[DeviceUsage],
+        input_tensors: Dict[str, np.ndarray],
+        timeout: int = 600,
+        poll_interval: int = 10,
+    ) -> List[Dict[str, Dict[str, np.ndarray]]]:
+        """
+        Run prediction on a model with given input tensors on multiple devices
+
+        Args:
+            model_id: The ID of the uploaded model
+            devices: List of DeviceUsage objects containing devices and their compute units
+            input_tensors: Dictionary mapping input names to numpy arrays
+            timeout: Maximum time in seconds to wait for all predictions (default: 600s)
+            poll_interval: Time in seconds between status checks (default: 10s)
+
+        Returns:
+            List[Dict[str, Dict[str, np.ndarray]]]: List of dictionaries, each mapping compute unit names to output tensors
+        """
+        # Upload input tensors once
+        if self.debug:
+            print("Uploading input tensors...")
+            for name, tensor in input_tensors.items():
+                print(f"  {name}: shape={tensor.shape}, dtype={tensor.dtype}")
+
+        input_tensors_id = self.upload_io_tensors(input_tensors, io_type=IOType.INPUT)
+
+        # Create device requests for all devices
+        device_requests = []
+        for device_usage in devices:
+            device_id = device_usage.device.to_device_id()
+            device_request = {
+                "device_id": device_id,
+                "compute_units": device_usage.compute_units,
+            }
+            device_requests.append(device_request)
+
+        # Prepare the data payload for prediction jobs
+        data = {
+            "device_requests": device_requests,
+            "input_tensors_id": input_tensors_id,
+            "job_type": JobType.PREDICTION.value,
+        }
+
+        # Submit all prediction jobs at once
+        response = self._make_request(
+            "POST",
+            f"/coreml/benchmark/enqueue?upload_id={model_id}",
+            data=data,
+        )
+
+        # Extract the benchmark IDs
+        benchmark_ids = response
+
+        if self.debug:
+            print(f"Prediction jobs submitted with IDs: {benchmark_ids}")
+
+        print(f"Waiting for {len(benchmark_ids)} predictions to complete...")
+
+        # Poll for prediction completion
+        start_time = time.time()
+        results = []
+        completed_ids = set()
+
+        while time.time() - start_time < timeout:
+            # Check each prediction
+            all_complete = True
+
+            for i, benchmark_id in enumerate(benchmark_ids):
+                if benchmark_id in completed_ids:
+                    continue
+
+                try:
+                    result = self.get_benchmark_by_id(benchmark_id)
+
+                    if result is None:
+                        all_complete = False
+                        continue
+
+                    status = result.Status
+
+                    # Check if prediction is complete
+                    if status == BenchmarkStatus.Complete:
+                        elapsed = int(time.time() - start_time)
+                        device_name = (
+                            devices[i].device.Name
+                            if i < len(devices)
+                            else f"Device {i}"
+                        )
+                        print(
+                            f"[{elapsed}s] Prediction {i + 1}/{len(benchmark_ids)} ({device_name}) completed"
+                        )
+
+                        # Extract output tensor IDs from all compute units
+                        compute_unit_outputs = {}
+                        for benchmark_data in result.BenchmarkData:
+                            if (
+                                benchmark_data.Success
+                                and benchmark_data.OutputTensorsId
+                            ):
+                                compute_unit = benchmark_data.ComputeUnit
+                                output_tensors_id = benchmark_data.OutputTensorsId
+
+                                if self.debug:
+                                    print(
+                                        f"Downloading outputs for compute unit '{compute_unit}' (tensor ID: {output_tensors_id})"
+                                    )
+
+                                # Download output tensors for this compute unit
+                                compute_unit_outputs[compute_unit] = (
+                                    self.download_io_tensors(output_tensors_id)
+                                )
+
+                        if compute_unit_outputs:
+                            results.append(compute_unit_outputs)
+                            completed_ids.add(benchmark_id)
+                        else:
+                            raise Exception(
+                                f"Prediction completed but no output tensors found for device {device_name}"
+                            )
+
+                    # Check if prediction failed
+                    elif status in [BenchmarkStatus.Failed, BenchmarkStatus.Deleted]:
+                        # Get failure reason
+                        failure_reason = "Unknown failure"
+                        for benchmark_data in result.BenchmarkData:
+                            if benchmark_data.FailureReason:
+                                failure_reason = benchmark_data.FailureReason
+                                break
+                        device_name = (
+                            devices[i].device.Name
+                            if i < len(devices)
+                            else f"Device {i}"
+                        )
+                        print(
+                            f"Prediction failed for device {device_name}: {failure_reason}"
+                        )
+                        completed_ids.add(
+                            benchmark_id
+                        )  # Mark as completed even if failed
+                    else:
+                        all_complete = False
+
+                except Exception as e:
+                    if self.debug:
+                        print(f"Error checking prediction {benchmark_id} status: {e}")
+                    # Continue checking other predictions
+                    all_complete = False
+
+            if all_complete:
+                break
+
+            # Wait before checking again
+            time.sleep(poll_interval)
+
+        # Check if all predictions completed
+        if len(results) < len(benchmark_ids) - len(
+            [bid for bid in completed_ids if bid not in [r for r in results]]
+        ):
+            print(
+                f"Warning: Only {len(results)}/{len(benchmark_ids)} predictions completed successfully within timeout"
+            )
+
+        return results
+
     def predict_model(
         self,
         model_id: str,
@@ -893,112 +1118,21 @@ class RunLocalClient:
         Returns:
             Dict[str, Dict[str, np.ndarray]]: Dictionary mapping compute unit names to output tensors
         """
-        # Upload input tensors
-        if self.debug:
-            print("Uploading input tensors...")
-            for name, tensor in input_tensors.items():
-                print(f"  {name}: shape={tensor.shape}, dtype={tensor.dtype}")
-
-        input_tensors_id = self.upload_io_tensors(input_tensors, io_type=IOType.INPUT)
-
-        # Create device ID
-        device_id = device.to_device_id()
-
-        # Create the device request
-        device_request = {"device_id": device_id, "compute_units": compute_units}
-
-        # Prepare the data payload for prediction job
-        data = {
-            "device_requests": [device_request],
-            "input_tensors_id": input_tensors_id,
-            "job_type": JobType.PREDICTION.value,
-        }
-
-        # Submit the prediction job
-        response = self._make_request(
-            "POST",
-            f"/coreml/benchmark/enqueue?upload_id={model_id}",
-            data=data,
+        # Create a DeviceUsage object and use the multi-device method
+        device_usage = DeviceUsage(device=device, compute_units=compute_units)
+        results = self.predict_models(
+            model_id=model_id,
+            devices=[device_usage],
+            input_tensors=input_tensors,
+            timeout=timeout,
+            poll_interval=poll_interval,
         )
 
-        # Extract the benchmark ID
-        benchmark_id = response[0]
-
-        if self.debug:
-            print(f"Prediction job submitted with ID: {benchmark_id}")
-
-        if not benchmark_id:
-            raise ValueError("Could not extract benchmark ID from response")
-
-        print(f"Waiting for prediction {benchmark_id} to complete...")
-
-        # Poll for prediction completion
-        start_time = time.time()
-        last_status = None
-        compute_unit_outputs = {}
-
-        while time.time() - start_time < timeout:
-            # Wait before checking
-            time.sleep(poll_interval)
-
-            try:
-                result = self.get_benchmark_by_id(benchmark_id)
-
-                if result is None:
-                    continue
-
-                status = result.Status
-
-                # Display status if changed
-                if status != last_status:
-                    elapsed = int(time.time() - start_time)
-                    print(f"[{elapsed}s] Prediction status: {status.value}")
-                    last_status = status
-
-                # Check if prediction is complete
-                if status == BenchmarkStatus.Complete:
-                    # Extract output tensor IDs from all compute units
-                    for benchmark_data in result.BenchmarkData:
-                        if benchmark_data.Success and benchmark_data.OutputTensorsId:
-                            compute_unit = benchmark_data.ComputeUnit
-                            output_tensors_id = benchmark_data.OutputTensorsId
-
-                            if self.debug:
-                                print(
-                                    f"Downloading outputs for compute unit '{compute_unit}' (tensor ID: {output_tensors_id})"
-                                )
-
-                            # Download output tensors for this compute unit
-                            compute_unit_outputs[compute_unit] = (
-                                self.download_io_tensors(output_tensors_id)
-                            )
-
-                    if compute_unit_outputs:
-                        return compute_unit_outputs
-                    else:
-                        raise Exception(
-                            "Prediction completed but no output tensors found"
-                        )
-
-                # Check if prediction failed
-                elif status in [BenchmarkStatus.Failed, BenchmarkStatus.Deleted]:
-                    # Get failure reason
-                    failure_reason = "Unknown failure"
-                    for benchmark_data in result.BenchmarkData:
-                        if benchmark_data.FailureReason:
-                            failure_reason = benchmark_data.FailureReason
-                            break
-                    raise Exception(f"Prediction failed: {failure_reason}")
-
-            except Exception as e:
-                if self.debug:
-                    print(f"Error checking prediction status: {e}")
-                raise
-
-        # Timeout reached
-        raise TimeoutError(
-            f"Prediction did not complete within {timeout} seconds timeout"
-        )
+        # Return the first (and only) result
+        if results:
+            return results[0]
+        else:
+            raise Exception("No prediction results returned")
 
     def _convert_benchmark_to_json_friendly(self, benchmark: BenchmarkDbItem) -> Dict:
         """
@@ -1127,7 +1261,8 @@ class RunLocalClient:
         timeout: int = 600,
         poll_interval: int = 10,
         show_progress: bool = True,
-    ) -> Dict:
+        count: Optional[int] = 1,
+    ) -> Union[Dict, List[Dict]]:
         """
         Single-call method to benchmark a model from file path or model ID
 
@@ -1145,9 +1280,10 @@ class RunLocalClient:
             timeout: Maximum time in seconds to wait for completion (default: 600s)
             poll_interval: Time in seconds between status checks (default: 10s)
             show_progress: Whether to show upload progress bar (default: True)
+            count: Number of devices to benchmark on (default: 1, 0 = all matching devices)
 
         Returns:
-            Dict: Benchmark results
+            Union[Dict, List[Dict]]: Benchmark results. Single dict if count=1, list of dicts otherwise
 
         Raises:
             ValueError: If neither model_path nor model_id is provided, or if both are provided
@@ -1168,12 +1304,13 @@ class RunLocalClient:
         if model_id is None:
             raise Exception("Model upload failed")
 
-        # Select device
+        # Select devices
         if self.debug:
-            print("Selecting device...")
+            print("Selecting devices...")
 
-        device_usage = self.select_device(
+        devices = self.select_devices(
             model_id=model_id,
+            count=count,
             device_name=device_name,
             ram_min=ram_min,
             ram_max=ram_max,
@@ -1182,28 +1319,53 @@ class RunLocalClient:
             year_max=year_max,
         )
 
-        if device_usage is None:
-            raise Exception("No matching device found with the specified criteria")
+        if not devices:
+            raise Exception("No matching devices found with the specified criteria")
 
-        # Use provided compute units or all available
-        selected_compute_units = (
-            compute_units if compute_units is not None else device_usage.compute_units
-        )
+        # Print selected devices
+        if len(devices) == 1:
+            device = devices[0]
+            print(
+                f"Using device: {device.device.Name} {device.device.Year} ({device.device.Soc})"
+            )
+            print(
+                f"\twith compute units: {compute_units if compute_units else device.compute_units}"
+            )
+        else:
+            print(f"Using {len(devices)} devices:")
+            for device in devices:
+                print(
+                    f"  - {device.device.Name} {device.device.Year} ({device.device.Soc})"
+                )
+                print(
+                    f"    with compute units: {compute_units if compute_units else device.compute_units}"
+                )
 
-        print(
-            f"Using device: {device_usage.device.Name} {device_usage.device.Year} ({device_usage.device.Soc})"
-        )
-        print(f"\twith compute units: {selected_compute_units}")
+        # If compute_units was specified, update all devices to use those units
+        if compute_units is not None:
+            for device in devices:
+                device.compute_units = compute_units
 
-        # Run benchmark
-        return self.benchmark_model(
-            model_id=model_id,
-            device=device_usage.device,
-            compute_units=selected_compute_units,
-            inputs=inputs,
-            timeout=timeout,
-            poll_interval=poll_interval,
-        )
+        # Run benchmarks
+        if len(devices) == 1:
+            # Single device - use the original method for backward compatibility
+            return self.benchmark_model(
+                model_id=model_id,
+                device=devices[0].device,
+                compute_units=devices[0].compute_units,
+                inputs=inputs,
+                timeout=timeout,
+                poll_interval=poll_interval,
+            )
+        else:
+            # Multiple devices - use the new method
+            return self.benchmark_models(
+                model_id=model_id,
+                devices=devices,
+                inputs=inputs,
+                timeout=timeout,
+                poll_interval=poll_interval,
+            )
 
     def predict(
         self,
@@ -1220,7 +1382,10 @@ class RunLocalClient:
         timeout: int = 600,
         poll_interval: int = 10,
         show_progress: bool = True,
-    ) -> Dict[str, Dict[str, np.ndarray]]:
+        count: Optional[int] = 1,
+    ) -> Union[
+        Dict[str, Dict[str, np.ndarray]], List[Dict[str, Dict[str, np.ndarray]]]
+    ]:
         """
         Single-call method to run prediction on a model from file path or model ID
 
@@ -1238,9 +1403,11 @@ class RunLocalClient:
             timeout: Maximum time in seconds to wait for completion (default: 600s)
             poll_interval: Time in seconds between status checks (default: 10s)
             show_progress: Whether to show upload progress bar (default: True)
+            count: Number of devices to run prediction on (default: 1, 0 = all matching devices)
 
         Returns:
-            Dict[str, Dict[str, np.ndarray]]: Dictionary mapping compute unit names to output tensors
+            Union[Dict[str, Dict[str, np.ndarray]], List[Dict[str, Dict[str, np.ndarray]]]]:
+                Single dict if count=1, list of dicts otherwise. Each dict maps compute unit names to output tensors
 
         Raises:
             ValueError: If neither model_path nor model_id is provided, or if both are provided
@@ -1261,11 +1428,12 @@ class RunLocalClient:
         if model_id is None:
             raise Exception("Model upload failed")
 
-        # Select device
+        # Select devices
         if self.debug:
-            print("Selecting device...")
-        device_usage = self.select_device(
+            print("Selecting devices...")
+        devices = self.select_devices(
             model_id=model_id,
+            count=count,
             device_name=device_name,
             ram_min=ram_min,
             ram_max=ram_max,
@@ -1274,25 +1442,50 @@ class RunLocalClient:
             year_max=year_max,
         )
 
-        if device_usage is None:
-            raise Exception("No matching device found with the specified criteria")
+        if not devices:
+            raise Exception("No matching devices found with the specified criteria")
 
-        # Use provided compute units or all available
-        selected_compute_units = (
-            compute_units if compute_units is not None else device_usage.compute_units
-        )
+        # Print selected devices
+        if len(devices) == 1:
+            device = devices[0]
+            print(
+                f"Using device: {device.device.Name} {device.device.Year} ({device.device.Soc})"
+            )
+            print(
+                f"\twith compute units: {compute_units if compute_units else device.compute_units}"
+            )
+        else:
+            print(f"Using {len(devices)} devices:")
+            for device in devices:
+                print(
+                    f"  - {device.device.Name} {device.device.Year} ({device.device.Soc})"
+                )
+                print(
+                    f"    with compute units: {compute_units if compute_units else device.compute_units}"
+                )
 
-        print(
-            f"Using device: {device_usage.device.Name} {device_usage.device.Year} ({device_usage.device.Soc})"
-        )
-        print(f"\twith compute units: {selected_compute_units}")
+        # If compute_units was specified, update all devices to use those units
+        if compute_units is not None:
+            for device in devices:
+                device.compute_units = compute_units
 
-        # Run prediction
-        return self.predict_model(
-            model_id=model_id,
-            device=device_usage.device,
-            compute_units=selected_compute_units,
-            input_tensors=inputs,
-            timeout=timeout,
-            poll_interval=poll_interval,
-        )
+        # Run predictions
+        if len(devices) == 1:
+            # Single device - use the original method for backward compatibility
+            return self.predict_model(
+                model_id=model_id,
+                device=devices[0].device,
+                compute_units=devices[0].compute_units,
+                input_tensors=inputs,
+                timeout=timeout,
+                poll_interval=poll_interval,
+            )
+        else:
+            # Multiple devices - use the new method
+            return self.predict_models(
+                model_id=model_id,
+                devices=devices,
+                input_tensors=inputs,
+                timeout=timeout,
+                poll_interval=poll_interval,
+            )
