@@ -1164,3 +1164,96 @@ class RunLocalClient:
             timeout=timeout,
             poll_interval=poll_interval,
         )
+
+    def predict(
+        self,
+        inputs: Dict[str, np.ndarray],
+        model_path: Optional[Union[Path, str]] = None,
+        model_id: Optional[str] = None,
+        device_name: Optional[str] = None,
+        ram_min: Optional[int] = None,
+        ram_max: Optional[int] = None,
+        soc: Optional[str] = None,
+        year_min: Optional[int] = None,
+        year_max: Optional[int] = None,
+        compute_units: Optional[List[str]] = None,
+        timeout: int = 600,
+        poll_interval: int = 10,
+        show_progress: bool = True,
+    ) -> Dict[str, Dict[str, np.ndarray]]:
+        """
+        Single-call method to run prediction on a model from file path or model ID
+
+        Args:
+            inputs: Dictionary mapping input names to numpy arrays
+            model_path: Path to the model file or folder (if model_id not provided)
+            model_id: ID of already uploaded model (if model_path not provided)
+            device_name: Optional device name to filter by (e.g. "MacBook")
+            ram_min: Optional minimum RAM amount (inclusive)
+            ram_max: Optional maximum RAM amount (inclusive)
+            soc: Optional SoC to filter by (e.g. "Apple M2 Pro")
+            year_min: Optional minimum year (inclusive)
+            year_max: Optional maximum year (inclusive)
+            compute_units: Optional list of compute units to use. If None, uses all available
+            timeout: Maximum time in seconds to wait for completion (default: 600s)
+            poll_interval: Time in seconds between status checks (default: 10s)
+            show_progress: Whether to show upload progress bar (default: True)
+
+        Returns:
+            Dict[str, Dict[str, np.ndarray]]: Dictionary mapping compute unit names to output tensors
+
+        Raises:
+            ValueError: If neither model_path nor model_id is provided, or if both are provided
+            Exception: If prediction fails
+        """
+        # Validate input parameters
+        if model_path is None and model_id is None:
+            raise ValueError("Either model_path or model_id must be provided")
+        if model_path is not None and model_id is not None:
+            raise ValueError("Only one of model_path or model_id should be provided")
+
+        # Upload model if path provided
+        if model_path is not None:
+            if self.debug:
+                print(f"Uploading model from {model_path}...")
+            model_id = self.upload_model(model_path, show_progress=show_progress)
+
+        if model_id is None:
+            raise Exception("Model upload failed")
+
+        # Select device
+        if self.debug:
+            print("Selecting device...")
+        device_usage = self.select_device(
+            model_id=model_id,
+            device_name=device_name,
+            ram_min=ram_min,
+            ram_max=ram_max,
+            soc=soc,
+            year_min=year_min,
+            year_max=year_max,
+        )
+
+        if device_usage is None:
+            raise Exception("No matching device found with the specified criteria")
+
+        # Use provided compute units or all available
+        selected_compute_units = (
+            compute_units if compute_units is not None else device_usage.compute_units
+        )
+
+        if self.debug:
+            print(
+                f"Selected device: {device_usage.device.Name} {device_usage.device.Year} ({device_usage.device.Soc})"
+            )
+            print(f"Using compute units: {selected_compute_units}")
+
+        # Run prediction
+        return self.predict_model(
+            model_id=model_id,
+            device=device_usage.device,
+            compute_units=selected_compute_units,
+            input_tensors=inputs,
+            timeout=timeout,
+            poll_interval=poll_interval,
+        )
