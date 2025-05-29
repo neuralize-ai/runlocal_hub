@@ -22,21 +22,14 @@ def main():
 
     model_path = "./HorizonAngle_exp0.mlpackage"
 
-    try:
-        benchmark_results = client.benchmark(
-            model_path=model_path,
-            device_name="MacBook",
-            soc="Apple M3",
-            ram_min=18,
-            ram_max=18,
-        )
-        print_json("Benchmark Results", benchmark_results)
-
-    except Exception as e:
-        print(f"Benchmark error: {e}")
-        return
-
-    print("\nBenchmark completed successfully!")
+    benchmark_results = client.benchmark(
+        model_path=model_path,
+        device_name="MacBook",
+        soc="Apple M3",
+        ram_min=18,
+        ram_max=18,
+    )
+    print_json("Benchmark Results", benchmark_results)
 
 
 if __name__ == "__main__":
