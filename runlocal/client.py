@@ -47,7 +47,7 @@ class RunLocalClient:
             raise ConfigurationError(
                 f"API key not found. Please set the {self.ENV_VAR_NAME} environment variable.",
                 config_key=self.ENV_VAR_NAME,
-                suggestion=f"export {self.ENV_VAR_NAME}=your-api-key-here"
+                suggestion=f"export {self.ENV_VAR_NAME}=your-api-key-here",
             )
 
         # Initialize HTTP client
@@ -266,7 +266,7 @@ class RunLocalClient:
         timeout: int = 600,
         poll_interval: int = 10,
         show_progress: bool = True,
-        count: Optional[int] = 1,
+        device_count: int = 1,
     ) -> Union[Dict, List[Dict]]:
         """
         Benchmark a model with clean, user-friendly API.
@@ -279,10 +279,10 @@ class RunLocalClient:
             timeout: Maximum time in seconds to wait for completion
             poll_interval: Time in seconds between status checks
             show_progress: Whether to show upload progress bar
-            count: Number of devices to benchmark on (1 = single result, >1 = list)
+            device_count: Number of devices to benchmark on (0 = all, 1 = single result, >1 = list)
 
         Returns:
-            Benchmark results (single dict if count=1, list of dicts otherwise)
+            Benchmark results (single dict if device_count=1, list of dicts otherwise)
 
         Raises:
             ValueError: If neither model_path nor model_id is provided
@@ -294,14 +294,14 @@ class RunLocalClient:
                 "Either model_path or model_id must be provided",
                 parameter="model_path/model_id",
                 expected="one of model_path or model_id",
-                got="neither provided"
+                got="neither provided",
             )
         if model_path is not None and model_id is not None:
             raise ValidationError(
                 "Only one of model_path or model_id should be provided",
-                parameter="model_path/model_id", 
+                parameter="model_path/model_id",
                 expected="either model_path or model_id",
-                got="both provided"
+                got="both provided",
             )
 
         # Use default filters if none provided
@@ -325,7 +325,7 @@ class RunLocalClient:
         devices = self.device_selector.select_devices(
             model_id=model_id,
             filters=device_filters,
-            count=count,
+            count=device_count,
             user_models=user_models,
         )
 
@@ -362,7 +362,7 @@ class RunLocalClient:
         timeout: int = 600,
         poll_interval: int = 10,
         show_progress: bool = True,
-        count: Optional[int] = 1,
+        device_count: int = 1,
     ) -> Union[
         Dict[str, Dict[str, np.ndarray]], List[Dict[str, Dict[str, np.ndarray]]]
     ]:
@@ -377,11 +377,11 @@ class RunLocalClient:
             timeout: Maximum time in seconds to wait for completion
             poll_interval: Time in seconds between status checks
             show_progress: Whether to show upload progress bar
-            count: Number of devices to run prediction on (1 = single result, >1 = list)
+            device_count: Number of devices to run prediction on (0 = all, 1 = single result, >1 = list)
 
         Returns:
             Prediction results mapping compute units to output tensors
-            (single dict if count=1, list of dicts otherwise)
+            (single dict if device_count=1, list of dicts otherwise)
 
         Raises:
             ValueError: If neither model_path nor model_id is provided
@@ -393,14 +393,14 @@ class RunLocalClient:
                 "Either model_path or model_id must be provided",
                 parameter="model_path/model_id",
                 expected="one of model_path or model_id",
-                got="neither provided"
+                got="neither provided",
             )
         if model_path is not None and model_id is not None:
             raise ValidationError(
                 "Only one of model_path or model_id should be provided",
-                parameter="model_path/model_id", 
+                parameter="model_path/model_id",
                 expected="either model_path or model_id",
-                got="both provided"
+                got="both provided",
             )
 
         # Use default filters if none provided
@@ -424,7 +424,7 @@ class RunLocalClient:
         devices = self.device_selector.select_devices(
             model_id=model_id,
             filters=device_filters,
-            count=count,
+            count=device_count,
             user_models=user_models,
         )
 
@@ -664,4 +664,3 @@ class RunLocalClient:
             result_with_tensors["OutputTensors"] = output_tensors
 
         processed_results.append(result_with_tensors)
-
