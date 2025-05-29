@@ -58,58 +58,36 @@ class BenchmarkData(BaseModel):
     def to_json_dict(self) -> Dict:
         """
         Convert to JSON-friendly dictionary.
-        Needed for post requests, not for dynamodb, dynamo can handle Decimals.
-        Decimals need to be strings.
+        Needed for post requests where Decimals need to be strings.
         """
-        return {
-            "Success": self.Success if self.Success is not None else None,
-            "Status": self.Status if self.Status is not None else None,
+        from ..utils.json import decimal_to_str, decimal_list_to_str
+        
+        result = {
+            "Success": self.Success,
+            "Status": self.Status,
             "FailureReason": self.FailureReason,
             "FailureError": self.FailureError,
             "Stdout": self.Stdout,
             "Stderr": self.Stderr,
             "ComputeUnit": self.ComputeUnit,
-            "LoadMsArray": [str(x) for x in self.LoadMsArray]
-            if self.LoadMsArray is not None
-            else None,
-            "LoadMsAverage": str(self.LoadMsAverage)
-            if self.LoadMsAverage is not None
-            else None,
-            "LoadMsMedian": str(self.LoadMsMedian)
-            if self.LoadMsMedian is not None
-            else None,
-            "InferenceMsArray": [str(x) for x in self.InferenceMsArray]
-            if self.InferenceMsArray is not None
-            else None,
-            "InferenceMsAverage": str(self.InferenceMsAverage)
-            if self.InferenceMsAverage is not None
-            else None,
-            "InferenceMsMedian": str(self.InferenceMsMedian)
-            if self.InferenceMsMedian is not None
-            else None,
-            "PrefillTokens": str(self.PrefillTokens)
-            if self.PrefillTokens is not None
-            else None,
-            "GenerationTokens": str(self.GenerationTokens)
-            if self.GenerationTokens is not None
-            else None,
-            "PrefillTPS": str(self.PrefillTPS) if self.PrefillTPS is not None else None,
-            "GenerateTPS": str(self.GenerateTPS)
-            if self.GenerateTPS is not None
-            else None,
-            "PeakLoadRamUsage": str(self.PeakLoadRamUsage)
-            if self.PeakLoadRamUsage is not None
-            else None,
-            "PeakRamUsage": str(self.PeakRamUsage)
-            if self.PeakRamUsage is not None
-            else None,
-            "PeakPrefillRamUsage": str(self.PeakPrefillRamUsage)
-            if self.PeakPrefillRamUsage is not None
-            else None,
-            "PeakGenerateRamUsage": str(self.PeakGenerateRamUsage)
-            if self.PeakGenerateRamUsage is not None
-            else None,
+            "LoadMsArray": decimal_list_to_str(self.LoadMsArray),
+            "LoadMsAverage": decimal_to_str(self.LoadMsAverage),
+            "LoadMsMedian": decimal_to_str(self.LoadMsMedian),
+            "InferenceMsArray": decimal_list_to_str(self.InferenceMsArray),
+            "InferenceMsAverage": decimal_to_str(self.InferenceMsAverage),
+            "InferenceMsMedian": decimal_to_str(self.InferenceMsMedian),
+            "PrefillTokens": decimal_to_str(self.PrefillTokens),
+            "GenerationTokens": decimal_to_str(self.GenerationTokens),
+            "PrefillTPS": decimal_to_str(self.PrefillTPS),
+            "GenerateTPS": decimal_to_str(self.GenerateTPS),
+            "PeakLoadRamUsage": decimal_to_str(self.PeakLoadRamUsage),
+            "PeakRamUsage": decimal_to_str(self.PeakRamUsage),
+            "PeakPrefillRamUsage": decimal_to_str(self.PeakPrefillRamUsage),
+            "PeakGenerateRamUsage": decimal_to_str(self.PeakGenerateRamUsage),
         }
+        
+        # Remove None values
+        return {k: v for k, v in result.items() if v is not None}
 
 
 class BenchmarkDbItem(BaseModel):
