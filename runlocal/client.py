@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, Union
 
 from tqdm import tqdm
 
+from .devices import DeviceSelector
 from .exceptions import RunLocalError, UploadError
 from .http import HTTPClient
 from .utils.decorators import handle_api_errors
@@ -47,6 +48,9 @@ class RunLocalClient:
         # Initialize HTTP client
         self.http_client = HTTPClient(base_url=base_url, api_key=api_key, debug=debug)
         self.debug = debug
+        
+        # Initialize device selector
+        self.device_selector = DeviceSelector(self.http_client)
 
     @handle_api_errors
     def health_check(self) -> Dict:
