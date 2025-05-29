@@ -140,7 +140,11 @@ class JobPoller:
             incomplete_count = len(job_ids) - len(completed_ids)
             raise JobTimeoutError(
                 f"Timeout: Only {len(completed_ids)}/{len(job_ids)} {job_type.value}s "
-                f"completed within {timeout}s. {incomplete_count} still running."
+                f"completed within {timeout}s. {incomplete_count} still running. "
+                f"Try increasing the timeout parameter or check your network connection.",
+                timeout=timeout,
+                completed_jobs=len(completed_ids),
+                total_jobs=len(job_ids)
             )
 
         return results

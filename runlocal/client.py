@@ -13,7 +13,7 @@ from tqdm import tqdm
 import numpy as np
 
 from .devices import DeviceFilters, DeviceSelector
-from .exceptions import RunLocalError, UploadError
+from .exceptions import ConfigurationError, RunLocalError, UploadError, ValidationError
 from .http import HTTPClient
 from .jobs import JobPoller
 from .models import DeviceUsage, IOType, JobType
@@ -44,8 +44,10 @@ class RunLocalClient:
         """
         api_key = os.environ.get(self.ENV_VAR_NAME)
         if not api_key:
-            raise RunLocalError(
-                f"{self.ENV_VAR_NAME} not found. Please provide an API key or set the environment variable."
+            raise ConfigurationError(
+                f"API key not found. Please set the {self.ENV_VAR_NAME} environment variable.",
+                config_key=self.ENV_VAR_NAME,
+                suggestion=f"export {self.ENV_VAR_NAME}=your-api-key-here"
             )
 
         # Initialize HTTP client
@@ -288,9 +290,19 @@ class RunLocalClient:
         """
         # Validate input parameters
         if model_path is None and model_id is None:
-            raise ValueError("Either model_path or model_id must be provided")
+            raise ValidationError(
+                "Either model_path or model_id must be provided",
+                parameter="model_path/model_id",
+                expected="one of model_path or model_id",
+                got="neither provided"
+            )
         if model_path is not None and model_id is not None:
-            raise ValueError("Only one of model_path or model_id should be provided")
+            raise ValidationError(
+                "Only one of model_path or model_id should be provided",
+                parameter="model_path/model_id", 
+                expected="either model_path or model_id",
+                got="both provided"
+            )
 
         # Use default filters if none provided
         if device_filters is None:
@@ -377,9 +389,19 @@ class RunLocalClient:
         """
         # Validate input parameters
         if model_path is None and model_id is None:
-            raise ValueError("Either model_path or model_id must be provided")
+            raise ValidationError(
+                "Either model_path or model_id must be provided",
+                parameter="model_path/model_id",
+                expected="one of model_path or model_id",
+                got="neither provided"
+            )
         if model_path is not None and model_id is not None:
-            raise ValueError("Only one of model_path or model_id should be provided")
+            raise ValidationError(
+                "Only one of model_path or model_id should be provided",
+                parameter="model_path/model_id", 
+                expected="either model_path or model_id",
+                got="both provided"
+            )
 
         # Use default filters if none provided
         if device_filters is None:

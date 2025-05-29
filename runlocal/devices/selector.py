@@ -89,8 +89,16 @@ class DeviceSelector:
         """
         # Validate model_id if user_models provided
         if user_models is not None and model_id not in user_models:
-            raise ValueError(
-                f"model_id '{model_id}' does not correspond to your available models"
+            from ..exceptions import ModelNotFoundError
+            
+            available_models_str = f"Available models: {', '.join(user_models[:5])}"
+            if len(user_models) > 5:
+                available_models_str += f" ... and {len(user_models) - 5} more"
+            
+            raise ModelNotFoundError(
+                f"Model '{model_id}' not found in your account. {available_models_str}",
+                model_id=model_id,
+                available_models=user_models
             )
         
         # Get all available devices for this model
@@ -101,9 +109,31 @@ class DeviceSelector:
         
         # Check if any devices matched
         if not filtered_devices:
+            # Create helpful error message with filter details
+            filter_details = {}
+            if filters.device_name:
+                filter_details["device_name"] = filters.device_name
+            if filters.soc:
+                filter_details["soc"] = filters.soc
+            if filters.ram_min:
+                filter_details["ram_min"] = f"{filters.ram_min}GB"
+            if filters.ram_max:
+                filter_details["ram_max"] = f"{filters.ram_max}GB"
+            if filters.year_min:
+                filter_details["year_min"] = filters.year_min
+            if filters.year_max:
+                filter_details["year_max"] = filters.year_max
+            
+            filter_description = ", ".join([f"{k}={v}" for k, v in filter_details.items()])
+            
+            error_message = f"No devices match the specified criteria ({filter_description}). "
+            error_message += f"Found {len(devices)} total devices for this model. "
+            error_message += "Try relaxing your filter conditions."
+            
             raise DeviceNotAvailableError(
-                "No devices match the specified criteria. "
-                "Try relaxing your filter conditions."
+                error_message,
+                filters_used=filter_details,
+                available_count=len(devices)
             )
         
         # Apply count logic: 0 means all devices, otherwise limit to count
