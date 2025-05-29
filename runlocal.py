@@ -761,6 +761,49 @@ class RunLocalClient:
         response = self._make_request("GET", f"/io-tensors/{tensors_id}")
         return IOTensorsMetadata(**response)
 
+    def download_io_tensors(self, tensors_id: str) -> Dict[str, np.ndarray]:
+        """
+        Download IOTensors as numpy arrays
+
+        Args:
+            tensors_id: The ID of the tensors to download
+
+        Returns:
+            Dict[str, np.ndarray]: Dictionary mapping tensor names to numpy arrays
+        """
+        url = f"{self.base_url}/io-tensors/{tensors_id}/download"
+
+        try:
+            response = requests.get(url, headers=self.headers)
+
+            if response.status_code != 200:
+                error_detail = response.text
+                try:
+                    error_json = response.json()
+                    error_detail = error_json.get("detail", response.text)
+                except:
+                    pass
+                raise Exception(
+                    f"IOTensor download failed with status {response.status_code}: {error_detail}"
+                )
+
+            # Load NPZ file from response content
+            npz_buffer = io.BytesIO(response.content)
+            npz_file = np.load(npz_buffer)
+
+            # Convert to regular dict
+            tensors = {name: npz_file[name] for name in npz_file.files}
+
+            if self.debug:
+                print(f"Downloaded {len(tensors)} tensors")
+                for name, tensor in tensors.items():
+                    print(f"  {name}: shape={tensor.shape}, dtype={tensor.dtype}")
+
+            return tensors
+
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Network error during IOTensor download: {str(e)}")
+
     def _convert_benchmark_to_json_friendly(self, benchmark: BenchmarkDbItem) -> Dict:
         """
         Convert a BenchmarkDbItem to a JSON-friendly dictionary by:
