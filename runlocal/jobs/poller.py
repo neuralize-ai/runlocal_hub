@@ -111,7 +111,7 @@ class JobPoller:
                         elapsed_time=int(time.time() - start_time),
                     )
 
-                    if result.is_complete:
+                    if result is not None and result.is_complete:
                         results.append(result)
                         completed_ids.add(job_id)
 
@@ -144,7 +144,7 @@ class JobPoller:
                 f"Try increasing the timeout parameter or check your network connection.",
                 timeout=timeout,
                 completed_jobs=len(completed_ids),
-                total_jobs=len(job_ids)
+                total_jobs=len(job_ids),
             )
 
         return results
@@ -341,4 +341,3 @@ class ProgressTracker:
         failed = len(self.failed_jobs)
 
         return f"Completed: {total}, Successful: {successful}, Failed: {failed}, Success Rate: {self.success_rate:.1f}%"
-
