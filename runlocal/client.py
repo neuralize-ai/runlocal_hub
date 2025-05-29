@@ -12,6 +12,7 @@ from tqdm import tqdm
 from .devices import DeviceSelector
 from .exceptions import RunLocalError, UploadError
 from .http import HTTPClient
+from .jobs import JobPoller
 from .tensors import TensorHandler
 from .utils.decorators import handle_api_errors
 
@@ -53,6 +54,7 @@ class RunLocalClient:
         # Initialize components
         self.device_selector = DeviceSelector(self.http_client)
         self.tensor_handler = TensorHandler(self.http_client)
+        self.job_poller = JobPoller(self.http_client)
 
     @handle_api_errors
     def health_check(self) -> Dict:
