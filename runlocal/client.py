@@ -26,8 +26,8 @@ class RunLocalClient:
     Simplified Python client for the RunLocal API.
     """
 
-    # BASE_URL = "https://neuralize-bench.com"
-    BASE_URL = "http://127.0.0.1:8000"  # Local development
+    BASE_URL = "https://neuralize-bench.com"
+    # BASE_URL = "http://127.0.0.1:8000"  # Local development
     ENV_VAR_NAME = "RUNLOCAL_API_KEY"
 
     def __init__(
