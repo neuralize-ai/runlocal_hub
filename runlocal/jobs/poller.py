@@ -3,43 +3,14 @@ Job polling logic for async operations.
 """
 
 import time
-from dataclasses import dataclass
-from typing import Any, Callable, List, Optional, Set
+from typing import Callable, List, Optional, Set
 
 from ..exceptions import JobTimeoutError
 from ..http import HTTPClient
-from ..models import BenchmarkDbItem, BenchmarkStatus, JobType
+from ..models import BenchmarkDbItem, BenchmarkStatus, JobResult, JobType
+from ..utils.console import JobStatusDisplay
 from ..utils.decorators import handle_api_errors
 from ..utils.json import convert_to_json_friendly
-
-
-@dataclass
-class JobResult:
-    """
-    Result of a job polling operation.
-    """
-
-    job_id: str
-    status: BenchmarkStatus
-    device_name: Optional[str] = None
-    data: Optional[Any] = None
-    error: Optional[str] = None
-    elapsed_time: Optional[int] = None
-
-    @property
-    def is_complete(self) -> bool:
-        """Check if the job is complete (success or failure)."""
-        return self.status in [BenchmarkStatus.Complete, BenchmarkStatus.Failed]
-
-    @property
-    def is_successful(self) -> bool:
-        """Check if the job completed successfully."""
-        return self.status == BenchmarkStatus.Complete
-
-    @property
-    def is_failed(self) -> bool:
-        """Check if the job failed."""
-        return self.status == BenchmarkStatus.Failed
 
 
 class JobPoller:
@@ -85,11 +56,15 @@ class JobPoller:
         if not job_ids:
             return []
 
-        print(f"Waiting for {len(job_ids)} {job_type.value}(s) to complete...")
+        # Initialize rich console display
+        display = JobStatusDisplay()
 
         start_time = time.time()
         results: List[JobResult] = []
         completed_ids: Set[str] = set()
+
+        # Track all job states for display
+        all_job_results: List[JobResult] = []
 
         # Create device name mapping
         device_name_map = {}
@@ -98,42 +73,85 @@ class JobPoller:
                 if i < len(device_names):
                     device_name_map[job_id] = device_names[i]
 
-        while self._should_continue(start_time, timeout, completed_ids, job_ids):
-            # Check each job
-            for i, job_id in enumerate(job_ids):
-                if job_id in completed_ids:
-                    continue
+        # Initialize job results for display
+        for job_id in job_ids:
+            all_job_results.append(
+                JobResult(
+                    job_id=job_id,
+                    status=BenchmarkStatus.Pending,
+                    device_name=device_name_map.get(job_id),
+                    elapsed_time=0,
+                )
+            )
 
-                try:
-                    result = self._check_job_status(
-                        job_id=job_id,
-                        device_name=device_name_map.get(job_id),
-                        elapsed_time=int(time.time() - start_time),
-                    )
+        # Start live display
+        display.start_live_display(all_job_results, job_type)
 
-                    if result is not None and result.is_complete:
-                        results.append(result)
-                        completed_ids.add(job_id)
+        try:
+            while self._should_continue(start_time, timeout, completed_ids, job_ids):
+                # Update elapsed time for all jobs
+                elapsed = int(time.time() - start_time)
 
-                        # Call progress callback if provided
-                        if progress_callback:
-                            progress_callback(result)
+                # Check each job
+                for i, job_id in enumerate(job_ids):
+                    if job_id in completed_ids:
+                        continue
 
-                        # Print progress
-                        self._print_completion_message(
-                            result, len(completed_ids), len(job_ids)
+                    try:
+                        result = self._check_job_status(
+                            job_id=job_id,
+                            device_name=device_name_map.get(job_id),
+                            elapsed_time=elapsed,
                         )
 
-                except Exception as e:
-                    # Log error but continue polling other jobs
-                    print(f"Error checking {job_type.value} {job_id} status: {e}")
+                        # Update the job result in our tracking list
+                        for j, job_result in enumerate(all_job_results):
+                            if job_result.job_id == job_id:
+                                if result is not None:
+                                    all_job_results[j] = result
+                                else:
+                                    # Job still running, update elapsed time
+                                    all_job_results[j].elapsed_time = elapsed
+                                    all_job_results[j].status = BenchmarkStatus.Running
+                                break
 
-            # Break if all jobs complete
-            if len(completed_ids) == len(job_ids):
-                break
+                        if result is not None and result.is_complete:
+                            results.append(result)
+                            completed_ids.add(job_id)
 
-            # Wait before checking again
-            time.sleep(self.poll_interval)
+                            # Call progress callback if provided
+                            if progress_callback:
+                                progress_callback(result)
+
+                    except Exception as e:
+                        # Update job with error status
+                        for j, job_result in enumerate(all_job_results):
+                            if job_result.job_id == job_id:
+                                all_job_results[j].status = BenchmarkStatus.Failed
+                                all_job_results[j].error = str(e)
+                                all_job_results[j].elapsed_time = elapsed
+                                break
+                        display.print_error(
+                            f"Error checking {job_type.value} {job_id}: {e}"
+                        )
+
+                # Update display with current status
+                display.update_display(all_job_results, job_type)
+
+                # Break if all jobs complete
+                if len(completed_ids) == len(job_ids):
+                    break
+
+                # Wait before checking again
+                time.sleep(self.poll_interval)
+
+        finally:
+            # Stop the live display
+            display.stop_display()
+
+            # Print final summary
+            total_time = time.time() - start_time
+            display.print_summary(results, total_time)
 
         # Check for timeout
         if len(completed_ids) < len(job_ids):
@@ -200,32 +218,31 @@ class JobPoller:
             elapsed_time: Optional elapsed time since start
 
         Returns:
-            JobResult if job is complete, None otherwise
+            JobResult with current status
         """
         # Get benchmark data from API
         response = self.http_client.get(f"/benchmarks/id/{job_id}")
         benchmark = BenchmarkDbItem(**response)
 
-        if benchmark.Status in [BenchmarkStatus.Complete, BenchmarkStatus.Failed]:
-            # Extract error information for failed jobs
-            error = None
-            if benchmark.Status == BenchmarkStatus.Failed:
-                error = self._extract_error_message(benchmark)
+        # Extract error information for failed jobs
+        error = None
+        if benchmark.Status == BenchmarkStatus.Failed:
+            error = self._extract_error_message(benchmark)
 
-            # Convert benchmark data to JSON-friendly format
+        # Convert benchmark data to JSON-friendly format if complete
+        result_data = None
+        if benchmark.Status in [BenchmarkStatus.Complete, BenchmarkStatus.Failed]:
             result_data = convert_to_json_friendly(benchmark)
 
-            return JobResult(
-                job_id=job_id,
-                status=benchmark.Status,
-                device_name=device_name,
-                data=result_data,
-                error=error,
-                elapsed_time=elapsed_time,
-            )
-
-        # Job not complete yet
-        return None
+        return JobResult(
+            job_id=job_id,
+            status=benchmark.Status,
+            device_name=device_name
+            or (benchmark.DeviceInfo.Name if benchmark.DeviceInfo else None),
+            data=result_data,
+            error=error,
+            elapsed_time=elapsed_time,
+        )
 
     def _should_continue(
         self,
@@ -274,33 +291,6 @@ class JobPoller:
                 return data.FailureError
 
         return "Unknown failure"
-
-    def _print_completion_message(
-        self,
-        result: JobResult,
-        completed_count: int,
-        total_count: int,
-    ) -> None:
-        """
-        Print a completion message for a finished job.
-
-        Args:
-            result: Job result
-            completed_count: Number of completed jobs
-            total_count: Total number of jobs
-        """
-        elapsed_str = f"[{result.elapsed_time}s]" if result.elapsed_time else ""
-        device_str = f" ({result.device_name})" if result.device_name else ""
-
-        if result.is_successful:
-            print(
-                f"{elapsed_str} Job {completed_count}/{total_count}{device_str} completed successfully"
-            )
-        else:
-            error_msg = f": {result.error}" if result.error else ""
-            print(
-                f"{elapsed_str} Job {completed_count}/{total_count}{device_str} failed{error_msg}"
-            )
 
 
 class ProgressTracker:

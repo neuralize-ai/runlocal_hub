@@ -1,7 +1,7 @@
 from .benchmark import BenchmarkData, BenchmarkDbItem, BenchmarkStatus
 from .device import Device, DeviceUsage
+from .job import JobResult, JobType
 from .tensor import IOTensorsMetadata, IOType, TensorInfo
-from .job import JobType
 
 __all__ = [
     "Device",
@@ -12,5 +12,7 @@ __all__ = [
     "IOType",
     "TensorInfo",
     "IOTensorsMetadata",
+    "JobResult",
     "JobType",
 ]
+

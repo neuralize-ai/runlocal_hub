@@ -1,2 +1,5 @@
 pydantic
 requests
+rich
+numpy
+tqdm
