@@ -1,6 +1,7 @@
 """
 Device-related models.
 """
+
 from typing import List, Optional
 
 from pydantic import BaseModel
@@ -8,7 +9,7 @@ from pydantic import BaseModel
 
 class Device(BaseModel):
     """Information about a device."""
-    
+
     Name: str
     Year: int
     Soc: str
@@ -32,6 +33,7 @@ class Device(BaseModel):
 
 class DeviceUsage(BaseModel):
     """Device with available compute units."""
-    
+
     device: Device
     compute_units: List[str]
+

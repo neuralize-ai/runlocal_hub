@@ -4,7 +4,7 @@ Device selection and filtering logic.
 
 from typing import List, Optional
 
-from ..exceptions import DeviceNotAvailableError, ModelNotFoundError
+from ..exceptions import DeviceNotAvailableError
 from ..http import HTTPClient
 from ..models import DeviceUsage
 from ..utils.decorators import handle_api_errors
@@ -53,7 +53,9 @@ class DeviceSelector:
                     compute_units=device_usage["compute_units"],
                 )
                 for device_usage in response
-                if device_usage.get("compute_units")
+                if device_usage.get("device")
+                and device_usage.get("device").get("Disabled") is False
+                and device_usage.get("compute_units")
                 and len(device_usage.get("compute_units", [])) > 0
             ]
 
@@ -61,9 +63,11 @@ class DeviceSelector:
         return [
             DeviceUsage(
                 device=device_usage["device"],
-                compute_units=device_usage.get("compute_units", []),
+                compute_units=[],
             )
             for device_usage in response
+            if device_usage.get("device")
+            and device_usage.get("device").get("Disabled") is False
         ]
 
     def select_devices(
@@ -229,4 +233,3 @@ class DeviceSelector:
             ]
 
         return filtered
-
