@@ -19,6 +19,7 @@ class DeviceFilters:
     soc: Optional[str] = None
     year_min: Optional[int] = None
     year_max: Optional[int] = None
+    os: Optional[str] = None
     
     def __post_init__(self):
         """Validate filter values."""

@@ -125,6 +125,8 @@ class DeviceSelector:
                 filter_details["year_min"] = filters.year_min
             if filters.year_max:
                 filter_details["year_max"] = filters.year_max
+            if filters.os:
+                filter_details["os"] = filters.os
 
             filter_description = ", ".join(
                 [f"{k}={v}" for k, v in filter_details.items()]
@@ -219,6 +221,12 @@ class DeviceSelector:
 
         if filters.year_max is not None:
             filtered = [d for d in filtered if d.device.Year <= filters.year_max]
+
+        # Filter by OS (substring match)
+        if filters.os is not None:
+            filtered = [
+                d for d in filtered if filters.os.lower() in d.device.OS.lower()
+            ]
 
         return filtered
 
