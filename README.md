@@ -4,10 +4,14 @@ A Python client library for interacting with the RunLocal API for model optimiza
 
 ## Dependencies
 
-Currently, this library is available directly from the repository:
-
 ```bash
 pip install -r requirements.txt
+```
+
+## Installation
+
+```sh
+pip install .
 ```
 
 ## Authentication
@@ -15,7 +19,7 @@ pip install -r requirements.txt
 You'll need an API key to use the RunLocal API. You can generate one in the RunLocal web interface:
 
 1. Log in to RunLocal
-2. Go to your user settings
+2. Go to your user settings (avatar dropdown)
 3. Navigate to the "API Keys" section
 4. Click "Create New API Key"
 5. Save your API key in a secure location
@@ -50,6 +54,7 @@ device_filters = DeviceFilters(
     ram_min=16,               # Minimum RAM (GB)
     ram_max=32,               # Maximum RAM (GB)
     year_min=2022             # Minimum device year
+    compute_units=["CPU_AND_GPU", "CPU_AND_NE"]     # Compute units to run
 )
 
 # Run benchmark with filters
@@ -68,7 +73,6 @@ Run operations on multiple devices simultaneously:
 # Use 2 devices
 results = client.benchmark(
     model_path="model.mlpackage",
-    device_filters=DeviceFilters(soc="Apple"),
     count=2
 )
 
@@ -76,7 +80,7 @@ results = client.benchmark(
 results = client.benchmark(
     model_path="model.mlpackage",
     device_filters=DeviceFilters(device_name="MacBook"),
-    count=0  # 0 means use all matching devices
+    count=None  # None means use all matching devices
 )
 
 # Default behavior (single device)
@@ -98,8 +102,7 @@ inputs = {"image": image}
 outputs = client.predict(
     inputs=inputs,
     model_path="model.mlpackage",
-    device_filters=DeviceFilters(device_name="MacBook"),
-    timeout=180
+    device_filters=DeviceFilters(device_name="iPhone"),
 )
 
 # Process outputs by compute unit
