@@ -266,7 +266,7 @@ class RunLocalClient:
         timeout: int = 600,
         poll_interval: int = 10,
         show_progress: bool = True,
-        device_count: int = 1,
+        device_count: Optional[int] = 1,
     ) -> Union[Dict, List[Dict]]:
         """
         Benchmark a model with clean, user-friendly API.
@@ -279,7 +279,7 @@ class RunLocalClient:
             timeout: Maximum time in seconds to wait for completion
             poll_interval: Time in seconds between status checks
             show_progress: Whether to show upload progress bar
-            device_count: Number of devices to benchmark on (0 = all, 1 = single result, >1 = list)
+            device_count: Number of devices to benchmark on (None = all, 1 = single result, >1 = list)
 
         Returns:
             Benchmark results (single dict if device_count=1, list of dicts otherwise)
@@ -362,7 +362,7 @@ class RunLocalClient:
         timeout: int = 600,
         poll_interval: int = 10,
         show_progress: bool = True,
-        device_count: int = 1,
+        device_count: Optional[int] = 1,
     ) -> Union[
         Dict[str, Dict[str, np.ndarray]], List[Dict[str, Dict[str, np.ndarray]]]
     ]:
@@ -377,11 +377,11 @@ class RunLocalClient:
             timeout: Maximum time in seconds to wait for completion
             poll_interval: Time in seconds between status checks
             show_progress: Whether to show upload progress bar
-            device_count: Number of devices to run prediction on (0 = all, 1 = single result, >1 = list)
+            device_count: Number of devices to run prediction on (None = all, 1 = single result, >1 = list)
 
         Returns:
             Prediction results mapping compute units to output tensors
-            (single dict if device_count=1, list of dicts otherwise)
+            (single dict if device_count=None, list of dicts otherwise)
 
         Raises:
             ValueError: If neither model_path nor model_id is provided

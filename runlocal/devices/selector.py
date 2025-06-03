@@ -74,7 +74,7 @@ class DeviceSelector:
         self,
         model_id: str,
         filters: DeviceFilters,
-        count: int = 1,
+        count: Optional[int] = 1,
         user_models: Optional[List[str]] = None,
     ) -> List[DeviceUsage]:
         """
@@ -83,7 +83,7 @@ class DeviceSelector:
         Args:
             model_id: ID of the model to get compatible devices for
             filters: Device filtering criteria
-            count: Number of devices to select (default: 1, 0 = all matching devices)
+            count: Number of devices to select (default: 1, None = all matching devices)
             user_models: Optional list of user's models for validation
 
         Returns:
@@ -147,7 +147,7 @@ class DeviceSelector:
             )
 
         # Apply count logic: 0 means all devices, otherwise limit to count
-        if count > 0 and len(filtered_devices) > count:
+        if count is not None and len(filtered_devices) > count:
             filtered_devices = filtered_devices[:count]
 
         return filtered_devices
