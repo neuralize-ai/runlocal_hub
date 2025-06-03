@@ -131,6 +131,8 @@ class DeviceSelector:
                 filter_details["year_max"] = filters.year_max
             if filters.os:
                 filter_details["os"] = filters.os
+            if filters.compute_units:
+                filter_details["compute_units"] = filters.compute_units
 
             filter_description = ", ".join(
                 [f"{k}={v}" for k, v in filter_details.items()]
@@ -231,5 +233,27 @@ class DeviceSelector:
             filtered = [
                 d for d in filtered if filters.os.lower() in d.device.OS.lower()
             ]
+
+        # Filter by compute units - only keep specified compute units
+        if filters.compute_units is not None:
+            new_filtered = []
+            for device_usage in filtered:
+                # Keep only compute units that are in the filter
+                matching_compute_units = [
+                    cu
+                    for cu in device_usage.compute_units
+                    if cu in filters.compute_units
+                ]
+
+                # Only include device if it has at least one matching compute unit
+                if matching_compute_units:
+                    new_filtered.append(
+                        DeviceUsage(
+                            device=device_usage.device,
+                            compute_units=matching_compute_units,
+                        )
+                    )
+
+            filtered = new_filtered
 
         return filtered

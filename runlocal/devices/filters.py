@@ -2,7 +2,7 @@
 Device filtering criteria.
 """
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List
 
 
 @dataclass
@@ -20,6 +20,7 @@ class DeviceFilters:
     year_min: Optional[int] = None
     year_max: Optional[int] = None
     os: Optional[str] = None
+    compute_units: Optional[List[str]] = None
     
     def __post_init__(self):
         """Validate filter values."""
