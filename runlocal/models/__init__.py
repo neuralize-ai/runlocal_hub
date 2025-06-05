@@ -1,4 +1,5 @@
-from .benchmark import BenchmarkData, BenchmarkDbItem, BenchmarkStatus
+from .benchmark import BenchmarkData, BenchmarkDataFloat, BenchmarkDbItem, BenchmarkStatus
+from .benchmark_result import BenchmarkResult
 from .device import Device, DeviceUsage
 from .job import JobResult, JobType
 from .prediction import PredictionResult
@@ -9,7 +10,9 @@ __all__ = [
     "DeviceUsage",
     "BenchmarkStatus",
     "BenchmarkData",
+    "BenchmarkDataFloat",
     "BenchmarkDbItem",
+    "BenchmarkResult",
     "IOType",
     "TensorInfo",
     "IOTensorsMetadata",
