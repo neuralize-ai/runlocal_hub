@@ -276,7 +276,8 @@ class RunLocalClient:
         poll_interval: int = 10,
         show_progress: bool = True,
         device_count: Optional[int] = 1,
-    ) -> Union[Dict, List[Dict]]:
+        output_dir: Optional[Union[str, Path]] = None,
+    ) -> Union[BenchmarkResult, List[BenchmarkResult]]:
         """
         Benchmark a model with clean, user-friendly API.
 
@@ -292,7 +293,9 @@ class RunLocalClient:
             output_dir: Directory to save output tensors (defaults to ./outputs/)
 
         Returns:
-            Benchmark results (single dict if device_count=1, list of dicts otherwise)
+            BenchmarkResult object(s) containing device info and performance data
+            (single BenchmarkResult if device_count=1, list of BenchmarkResult otherwise)
+            Output tensors are saved as file paths
 
         Raises:
             ValueError: If neither model_path nor model_id is provided
@@ -391,7 +394,7 @@ class RunLocalClient:
             output_dir: Directory to save output tensors (defaults to ./outputs)
 
         Returns:
-            PredictionResult object(s) containing device info and output tensors
+            PredictionResult object(s) containing device info and output tensor file paths
             (single PredictionResult if device_count=1, list of PredictionResult otherwise)
 
         Raises:
@@ -471,7 +474,8 @@ class RunLocalClient:
         inputs: Optional[Dict[str, np.ndarray]] = None,
         timeout: int = 600,
         poll_interval: int = 10,
-    ) -> Union[Dict, List[Dict]]:
+        output_dir: Optional[Union[str, Path]] = None,
+    ) -> Union[BenchmarkResult, List[BenchmarkResult]]:
         """
         Internal method to run benchmarks using refactored components.
         """
@@ -533,15 +537,57 @@ class RunLocalClient:
         # Process results and download output tensors if needed
         processed_results = []
         for i, result in enumerate(results):
-            if result.is_successful and inputs is not None:
-                # Download output tensors for successful benchmarks
-                self._download_output_tensors_for_benchmark(result, processed_results)
+            if result.is_successful and result.data:
+                # Extract device info and benchmark data
+                device_info = result.data.get("DeviceInfo", {})
+                device = Device(**device_info)
+
+                # Convert benchmark data to float format
+                benchmark_data = []
+                for bd in result.data.get("BenchmarkData", []):
+                    original_bd = BenchmarkData(**bd)
+                    benchmark_data.append(
+                        BenchmarkDataFloat.from_benchmark_data(original_bd)
+                    )
+
+                # Download output tensors if inputs were provided
+                output_tensors = None
+                if inputs is not None:
+                    output_tensors = {}
+                    for bd in result.data["BenchmarkData"]:
+                        if bd.get("Success") and bd.get("OutputTensorsId"):
+                            compute_unit = bd["ComputeUnit"]
+                            output_tensors_id = bd["OutputTensorsId"]
+
+                            if self.debug:
+                                print(
+                                    f"Downloading outputs for compute unit '{compute_unit}' (tensor ID: {output_tensors_id})"
+                                )
+
+                            output_tensors[compute_unit] = (
+                                self.tensor_handler.download_tensors(
+                                    output_tensors_id, output_dir=output_dir
+                                )
+                            )
+
+                benchmark_result = BenchmarkResult(
+                    device=device,
+                    benchmark_data=benchmark_data,
+                    job_id=result.job_id,
+                    elapsed_time=result.elapsed_time or 0.0,
+                    status=result.data.get("Status", "Unknown"),
+                    upload_id=result.data.get("UploadId", ""),
+                    output_tensors=output_tensors,
+                )
+                processed_results.append(benchmark_result)
             else:
-                processed_results.append(result.data)
+                raise RunLocalError(
+                    f"Benchmark failed for device {result.device_name}: {result.error}"
+                )
 
         # Return single result or list based on device count
         if len(devices) == 1:
-            return processed_results[0] if processed_results else {}
+            return processed_results[0] if processed_results else []
         else:
             return processed_results
 
