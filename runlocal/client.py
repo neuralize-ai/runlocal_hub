@@ -125,7 +125,7 @@ class RunLocalClient:
         if not model_path.exists():
             raise FileNotFoundError(f"Model path does not exist: {model_path}")
 
-        upload_filename = model_path.stem
+        upload_filename = model_path.name
 
         # Create temporary directory for zipping
         with tempfile.TemporaryDirectory() as temp_dir:
