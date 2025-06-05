@@ -36,6 +36,7 @@ def main():
             f"\nDevice: {result.device.Name} ({result.device.Soc}, {result.device.Ram}GB RAM)"
         )
         print(f"Job ID: {result.job_id}")
+        print(f"Status: {result.status}")
         print(f"Elapsed time: {result.elapsed_time:.2f}s")
 
         for compute_unit, output_tensors in result.outputs.items():

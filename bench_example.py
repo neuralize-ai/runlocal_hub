@@ -53,9 +53,9 @@ def main():
                 print(f"\n{bd.ComputeUnit}: FAILED")
 
         # Show output tensor file paths if available
-        if result.output_tensors:
+        if result.outputs:
             print("\nOutput tensor files saved:")
-            for compute_unit, tensors in result.output_tensors.items():
+            for compute_unit, tensors in result.outputs.items():
                 print(f"  {compute_unit}:")
                 for name, path in tensors.items():
                     print(f"    {name}: {path}")

@@ -6,12 +6,15 @@ from .benchmark import BenchmarkDataFloat
 
 class BenchmarkResult(BaseModel):
     """Result from a benchmark job including device info and performance data."""
-    
+
     device: Device
     benchmark_data: List[BenchmarkDataFloat]
     job_id: str
     elapsed_time: float
     status: str
-    upload_id: str
+    model_id: str
     # Optional output tensor file paths
-    output_tensors: Optional[Dict[str, Dict[str, str]]] = None  # Dict[compute_unit, Dict[tensor_name, file_path]]
+    outputs: Optional[Dict[str, Dict[str, str]]] = (
+        None  # Dict[compute_unit, Dict[tensor_name, file_path]]
+    )
+

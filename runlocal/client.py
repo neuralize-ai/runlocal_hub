@@ -552,8 +552,8 @@ class RunLocalClient:
                     job_id=result.job_id,
                     elapsed_time=result.elapsed_time or 0.0,
                     status=result.data.get("Status", "Unknown"),
-                    upload_id=result.data.get("UploadId", ""),
-                    output_tensors=output_tensors,
+                    model_id=result.data.get("UploadId", ""),
+                    outputs=output_tensors,
                 )
                 processed_results.append(benchmark_result)
             else:
@@ -665,6 +665,8 @@ class RunLocalClient:
                         outputs=compute_unit_outputs,
                         job_id=result.job_id,
                         elapsed_time=result.elapsed_time or 0.0,
+                        status=result.data.get("Status", "Unknown"),
+                        model_id=result.data.get("UploadId", ""),
                     )
                     processed_results.append(prediction_result)
                 else:
