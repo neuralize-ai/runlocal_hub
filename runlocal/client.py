@@ -16,7 +16,16 @@ from .devices import DeviceFilters, DeviceSelector
 from .exceptions import ConfigurationError, RunLocalError, UploadError, ValidationError
 from .http import HTTPClient
 from .jobs import JobPoller
-from .models import DeviceUsage, IOType, JobType, PredictionResult, Device
+from .models import (
+    DeviceUsage,
+    IOType,
+    JobType,
+    PredictionResult,
+    BenchmarkResult,
+    Device,
+    BenchmarkData,
+    BenchmarkDataFloat,
+)
 from .tensors import TensorHandler
 from .utils.decorators import handle_api_errors
 
@@ -280,6 +289,7 @@ class RunLocalClient:
             poll_interval: Time in seconds between status checks
             show_progress: Whether to show upload progress bar
             device_count: Number of devices to benchmark on (None = all, 1 = single result, >1 = list)
+            output_dir: Directory to save output tensors (defaults to ./outputs/)
 
         Returns:
             Benchmark results (single dict if device_count=1, list of dicts otherwise)
@@ -351,6 +361,7 @@ class RunLocalClient:
             inputs=inputs,
             timeout=timeout,
             poll_interval=poll_interval,
+            output_dir=output_dir,
         )
 
     def predict(
@@ -363,6 +374,7 @@ class RunLocalClient:
         poll_interval: int = 10,
         show_progress: bool = True,
         device_count: Optional[int] = 1,
+        output_dir: Optional[Union[str, Path]] = None,
     ) -> Union[PredictionResult, List[PredictionResult]]:
         """
         Run prediction on a model with clean, user-friendly API.
@@ -376,6 +388,7 @@ class RunLocalClient:
             poll_interval: Time in seconds between status checks
             show_progress: Whether to show upload progress bar
             device_count: Number of devices to run prediction on (None = all, 1 = single result, >1 = list)
+            output_dir: Directory to save output tensors (defaults to ./outputs)
 
         Returns:
             PredictionResult object(s) containing device info and output tensors
@@ -448,6 +461,7 @@ class RunLocalClient:
             inputs=inputs,
             timeout=timeout,
             poll_interval=poll_interval,
+            output_dir=output_dir,
         )
 
     def _run_benchmarks(
@@ -538,6 +552,7 @@ class RunLocalClient:
         inputs: Dict[str, np.ndarray],
         timeout: int = 600,
         poll_interval: int = 10,
+        output_dir: Optional[Union[str, Path]] = None,
     ) -> Union[PredictionResult, List[PredictionResult]]:
         """
         Internal method to run predictions using refactored components.
@@ -613,7 +628,9 @@ class RunLocalClient:
 
                         # Download output tensors for this compute unit
                         compute_unit_outputs[compute_unit] = (
-                            self.tensor_handler.download_tensors(output_tensors_id)
+                            self.tensor_handler.download_tensors(
+                                output_tensors_id, output_dir=output_dir
+                            )
                         )
 
                 if compute_unit_outputs:
@@ -643,30 +660,3 @@ class RunLocalClient:
             return processed_results[0] if processed_results else []
         else:
             return processed_results
-
-    def _download_output_tensors_for_benchmark(self, result, processed_results):
-        """
-        Helper to download output tensors for benchmark results.
-        """
-        output_tensors = {}
-        for benchmark_data in result.data["BenchmarkData"]:
-            if benchmark_data.get("Success") and benchmark_data.get("OutputTensorsId"):
-                compute_unit = benchmark_data["ComputeUnit"]
-                output_tensors_id = benchmark_data["OutputTensorsId"]
-
-                if self.debug:
-                    print(
-                        f"Downloading outputs for compute unit '{compute_unit}' (tensor ID: {output_tensors_id})"
-                    )
-
-                # Download output tensors for this compute unit
-                output_tensors[compute_unit] = self.tensor_handler.download_tensors(
-                    output_tensors_id
-                )
-
-        # Add output tensors to the result
-        result_with_tensors = result.data.copy()
-        if output_tensors:
-            result_with_tensors["OutputTensors"] = output_tensors
-
-        processed_results.append(result_with_tensors)

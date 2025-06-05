@@ -1,15 +1,15 @@
 from typing import Dict
-import numpy as np
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 from .device import Device
 
 
 class PredictionResult(BaseModel):
-    """Result from a prediction job including device info and outputs."""
-    
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+    """Result from a prediction job including device info and output file paths."""
+
     device: Device
-    outputs: Dict[str, Dict[str, np.ndarray]]
+    outputs: Dict[
+        str, Dict[str, str]
+    ]  # Dict[compute_unit, Dict[tensor_name, file_path]]
     job_id: str
     elapsed_time: float
+
