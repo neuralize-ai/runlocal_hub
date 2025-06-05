@@ -1,41 +1,9 @@
 #!/usr/bin/env python3
 
-import json
-
 import numpy as np
 
 from runlocal.client import RunLocalClient
 from runlocal.devices import DeviceFilters
-
-
-def print_json(title, data):
-    """Helper function to pretty-print JSON data"""
-    print(f"\n=== {title} ===")
-    try:
-        # Convert numpy arrays to JSON-serializable format
-        data_copy = convert_numpy_to_json(data)
-        json_str = json.dumps(data_copy, indent=4)
-        print(json_str)
-    except Exception as e:
-        print(f"Error serializing JSON: {e}")
-
-    print()
-
-
-def convert_numpy_to_json(obj):
-    """Recursively convert numpy arrays to JSON-serializable format"""
-    if isinstance(obj, np.ndarray):
-        return {
-            "data": obj.tolist(),
-            "shape": list(obj.shape),
-            "dtype": str(obj.dtype),
-        }
-    elif isinstance(obj, dict):
-        return {k: convert_numpy_to_json(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [convert_numpy_to_json(item) for item in obj]
-    else:
-        return obj
 
 
 def main():
@@ -53,13 +21,50 @@ def main():
     )
 
     try:
-        benchmark_results = client.benchmark(
+        result = client.benchmark(
             model_path=model_path,
             device_filters=device_filters,
             inputs=inputs,
             timeout=300,  # 5 minute timeout
         )
-        print_json("Benchmark Results", benchmark_results)
+
+        if isinstance(result, list):
+            result = result[0]
+
+        print("Benchmark Results:")
+        print(
+            f"\nDevice: {result.device.Name} ({result.device.Soc}, {result.device.Ram}GB RAM)"
+        )
+        print(f"Job ID: {result.job_id}")
+        print(f"Status: {result.status}")
+        print(f"Elapsed time: {result.elapsed_time:.2f}s")
+
+        print(f"\nPerformance data for {len(result.benchmark_data)} compute unit(s):")
+        for bd in result.benchmark_data:
+            if bd.Success:
+                print(f"\n{bd.ComputeUnit}:")
+                if bd.LoadMsArray:
+                    print(f"  Median Load time: {np.median(bd.LoadMsArray):.2f} ms")
+                if bd.InferenceMsArray:
+                    print(
+                        f"  Median Inference time: {np.median(bd.InferenceMsArray):.2f} ms"
+                    )
+            else:
+                print(f"\n{bd.ComputeUnit}: FAILED")
+
+        # Show output tensor file paths if available
+        if result.output_tensors:
+            print("\nOutput tensor files saved:")
+            for compute_unit, tensors in result.output_tensors.items():
+                print(f"  {compute_unit}:")
+                for name, path in tensors.items():
+                    print(f"    {name}: {path}")
+
+                    # Show how to load the tensor back
+                    loaded_tensor = np.load(path)
+                    print(
+                        f"      (shape={loaded_tensor.shape}, dtype={loaded_tensor.dtype})"
+                    )
 
     except Exception as e:
         print(f"Benchmark failed: {type(e).__name__}: {e}")

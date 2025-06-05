@@ -35,11 +35,17 @@ def main():
         print(
             f"\nDevice: {result.device.Name} ({result.device.Soc}, {result.device.Ram}GB RAM)"
         )
+        print(f"Job ID: {result.job_id}")
+        print(f"Elapsed time: {result.elapsed_time:.2f}s")
 
         for compute_unit, output_tensors in result.outputs.items():
             print(f"\nOutputs for compute unit '{compute_unit}':")
-            for name, tensor in output_tensors.items():
-                print(f"  {name}: shape={tensor.shape}, dtype={tensor.dtype}")
+            for name, path in output_tensors.items():
+                print(f"  {name}: {path}")
+
+                # Load and show tensor info
+                tensor = np.load(path)
+                print(f"    shape={tensor.shape}, dtype={tensor.dtype}")
                 # Print first few values for small tensors
                 if tensor.size <= 10:
                     print(f"    values: {tensor.flatten()}")
