@@ -342,20 +342,8 @@ class RunLocalClient:
             user_models=user_models,
         )
 
-        # Print selected devices
-        if len(devices) == 1:
-            device = devices[0]
-            print(
-                f"Using device: {device.device.Name} {device.device.Year} ({device.device.Soc})"
-            )
-            print(f"\twith compute units: {device.compute_units}")
-        else:
-            print(f"Using {len(devices)} devices:")
-            for device in devices:
-                print(
-                    f"  - {device.device.Name} {device.device.Year} ({device.device.Soc})"
-                )
-                print(f"    with compute units: {device.compute_units}")
+        # Display selected devices
+        self.device_selector.display_selected_devices(devices)
 
         # Run benchmarks using our components
         return self._run_benchmarks(
@@ -442,20 +430,8 @@ class RunLocalClient:
             user_models=user_models,
         )
 
-        # Print selected devices
-        if len(devices) == 1:
-            device = devices[0]
-            print(
-                f"Using device: {device.device.Name} {device.device.Year} ({device.device.Soc})"
-            )
-            print(f"\twith compute units: {device.compute_units}")
-        else:
-            print(f"Using {len(devices)} devices:")
-            for device in devices:
-                print(
-                    f"  - {device.device.Name} {device.device.Year} ({device.device.Soc})"
-                )
-                print(f"    with compute units: {device.compute_units}")
+        # Display selected devices
+        self.device_selector.display_selected_devices(devices)
 
         # Run predictions using our components
         return self._run_predictions(

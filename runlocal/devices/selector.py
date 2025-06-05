@@ -4,6 +4,9 @@ Device selection and filtering logic.
 
 from typing import List, Optional
 
+from rich.console import Console
+from rich.table import Table
+
 from ..exceptions import DeviceNotAvailableError
 from ..http import HTTPClient
 from ..models import DeviceUsage
@@ -257,3 +260,38 @@ class DeviceSelector:
             filtered = new_filtered
 
         return filtered
+
+    def display_selected_devices(self, devices: List[DeviceUsage]) -> None:
+        """
+        Display selected devices in a nice format using rich.
+
+        Args:
+            devices: List of selected devices to display
+        """
+        console = Console()
+
+        console.print(
+            f"[bold green]✓[/bold green] Selected [bold]{len(devices)}[/bold] device(s):"
+        )
+
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("Device", style="bold")
+        table.add_column("Year", justify="center")
+        table.add_column("SoC", style="cyan")
+        table.add_column("RAM", justify="center")
+        table.add_column("OS", style="dim")
+        table.add_column("Compute Units")
+
+        for device in devices:
+            table.add_row(
+                device.device.Name,
+                str(device.device.Year),
+                device.device.Soc,
+                f"{device.device.Ram}GB",
+                f"{device.device.OS} {device.device.OSVersion}",
+                ", ".join(device.compute_units),
+            )
+
+        console.print(table)
+
+        print("")
