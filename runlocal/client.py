@@ -16,7 +16,7 @@ from .devices import DeviceFilters, DeviceSelector
 from .exceptions import ConfigurationError, RunLocalError, UploadError, ValidationError
 from .http import HTTPClient
 from .jobs import JobPoller
-from .models import DeviceUsage, IOType, JobType
+from .models import DeviceUsage, IOType, JobType, PredictionResult, Device
 from .tensors import TensorHandler
 from .utils.decorators import handle_api_errors
 
@@ -363,9 +363,7 @@ class RunLocalClient:
         poll_interval: int = 10,
         show_progress: bool = True,
         device_count: Optional[int] = 1,
-    ) -> Union[
-        Dict[str, Dict[str, np.ndarray]], List[Dict[str, Dict[str, np.ndarray]]]
-    ]:
+    ) -> Union[PredictionResult, List[PredictionResult]]:
         """
         Run prediction on a model with clean, user-friendly API.
 
@@ -380,8 +378,8 @@ class RunLocalClient:
             device_count: Number of devices to run prediction on (None = all, 1 = single result, >1 = list)
 
         Returns:
-            Prediction results mapping compute units to output tensors
-            (single dict if device_count=None, list of dicts otherwise)
+            PredictionResult object(s) containing device info and output tensors
+            (single PredictionResult if device_count=1, list of PredictionResult otherwise)
 
         Raises:
             ValueError: If neither model_path nor model_id is provided
@@ -540,9 +538,7 @@ class RunLocalClient:
         inputs: Dict[str, np.ndarray],
         timeout: int = 600,
         poll_interval: int = 10,
-    ) -> Union[
-        Dict[str, Dict[str, np.ndarray]], List[Dict[str, Dict[str, np.ndarray]]]
-    ]:
+    ) -> Union[PredictionResult, List[PredictionResult]]:
         """
         Internal method to run predictions using refactored components.
         """
@@ -621,7 +617,17 @@ class RunLocalClient:
                         )
 
                 if compute_unit_outputs:
-                    processed_results.append(compute_unit_outputs)
+                    # Extract device info from the data
+                    device_info = result.data.get("DeviceInfo", {})
+                    device = Device(**device_info)
+
+                    prediction_result = PredictionResult(
+                        device=device,
+                        outputs=compute_unit_outputs,
+                        job_id=result.job_id,
+                        elapsed_time=result.elapsed_time or 0.0,
+                    )
+                    processed_results.append(prediction_result)
                 else:
                     raise RunLocalError(
                         f"Prediction completed but no output tensors found for device {result.device_name}"
@@ -634,7 +640,7 @@ class RunLocalClient:
 
         # Return single result or list based on device count
         if len(devices) == 1:
-            return processed_results[0] if processed_results else {}
+            return processed_results[0] if processed_results else []
         else:
             return processed_results
 

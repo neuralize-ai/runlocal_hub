@@ -21,15 +21,22 @@ def main():
     )
 
     try:
-        compute_unit_outputs = client.predict(
+        result = client.predict(
             inputs=inputs,
             model_path=model_path,
             device_filters=device_filters,
             timeout=300,  # 5 minute timeout
         )
 
+        if isinstance(result, list):
+            result = result[0]
+
         print("Prediction Results:")
-        for compute_unit, output_tensors in compute_unit_outputs.items():
+        print(
+            f"\nDevice: {result.device.Name} ({result.device.Soc}, {result.device.Ram}GB RAM)"
+        )
+
+        for compute_unit, output_tensors in result.outputs.items():
             print(f"\nOutputs for compute unit '{compute_unit}':")
             for name, tensor in output_tensors.items():
                 print(f"  {name}: shape={tensor.shape}, dtype={tensor.dtype}")
