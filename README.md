@@ -1,6 +1,19 @@
 # RunLocal Python Client
 
-A Python client library for interacting with the RunLocal API for model optimization and benchmarking.
+A Python client library for benchmarking and running machine learning models on real devices through the RunLocal API.
+
+## What is RunLocal?
+
+RunLocal provides cloud access to physical devices for testing and benchmarking ML models across platforms. This client library enables you to:
+
+- **Benchmark ML models** on real hardware to measure performance metrics
+- **Run inference** on actual devices to validate model outputs and accuracy
+- **Test across platforms** - MacBooks, iPhones, iPads, Android devices, and Windows machines
+- **Support multiple formats** - CoreML, ONNX, OpenVINO, and TensorFlow Lite models
+- **Compare compute units** - test performance on CPU, GPU, and Neural Engine (where available)
+- **Avoid hardware limitations** - no need to own every device you want to test on
+
+Perfect for ML engineers who need to understand how their models perform across diverse hardware ecosystems before deployment.
 
 ## Dependencies
 
