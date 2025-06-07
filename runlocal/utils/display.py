@@ -2,9 +2,11 @@
 Display utilities for formatting benchmark results.
 """
 
-from typing import List, Optional, Union
+from typing import List, Union
+
 from rich.console import Console
 from rich.table import Table
+
 from ..models.benchmark_result import BenchmarkResult
 
 
@@ -14,7 +16,7 @@ def display_benchmark_results(
     show_inference_array: bool = False,
     show_load_array: bool = False,
     show_ram_usage: bool = False,
-    title: Optional[str] = "Benchmark Results",
+    show_failed_benchmarks: bool = False,
 ) -> None:
     """
     Display benchmark results in a formatted table using rich.
@@ -25,7 +27,6 @@ def display_benchmark_results(
         show_inference_array: Show full inference time arrays
         show_load_array: Show full load time arrays
         show_ram_usage: Show RAM usage metrics
-        title: Table title
     """
     console = Console()
 
@@ -37,7 +38,9 @@ def display_benchmark_results(
         return
 
     # Create table
-    table = Table(title=title, show_header=True, header_style="bold magenta")
+    table = Table(
+        title="Benchmark Results", show_header=True, header_style="bold magenta"
+    )
 
     # Add basic columns
     table.add_column("Device", style="cyan", no_wrap=True)
@@ -67,6 +70,9 @@ def display_benchmark_results(
         device = result.device
 
         for benchmark_data in result.benchmark_data:
+            if benchmark_data.Status == "Failed" or benchmark_data.Success is False:
+                continue
+
             row = []
 
             # Basic device info
@@ -142,6 +148,9 @@ def display_benchmark_results(
             table.add_row(*row)
 
     console.print(table)
+
+    if show_failed_benchmarks:
+        display_failed_benchmarks(results)
 
 
 def display_failed_benchmarks(
