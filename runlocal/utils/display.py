@@ -2,14 +2,14 @@
 Display utilities for formatting benchmark results.
 """
 
-from typing import List, Optional
+from typing import List, Optional, Union
 from rich.console import Console
 from rich.table import Table
 from ..models.benchmark_result import BenchmarkResult
 
 
 def display_benchmark_results(
-    results: List[BenchmarkResult],
+    results: Union[BenchmarkResult, List[BenchmarkResult]],
     show_average: bool = False,
     show_inference_array: bool = False,
     show_load_array: bool = False,
@@ -29,7 +29,10 @@ def display_benchmark_results(
     """
     console = Console()
 
-    if not results:
+    if isinstance(results, BenchmarkResult):
+        results = [results]
+
+    if len(results) == 0:
         console.print("[yellow]No benchmark results to display[/yellow]")
         return
 
@@ -141,7 +144,9 @@ def display_benchmark_results(
     console.print(table)
 
 
-def display_failed_benchmarks(results: List[BenchmarkResult]) -> None:
+def display_failed_benchmarks(
+    results: Union[BenchmarkResult, List[BenchmarkResult]],
+) -> None:
     """
     Display details about failed benchmark runs.
 
@@ -149,6 +154,9 @@ def display_failed_benchmarks(results: List[BenchmarkResult]) -> None:
         results: List of benchmark results to check for failures
     """
     console = Console()
+
+    if isinstance(results, BenchmarkResult):
+        results = [results]
 
     failed_results = []
     for result in results:
