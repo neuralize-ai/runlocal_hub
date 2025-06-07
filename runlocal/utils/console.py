@@ -141,6 +141,10 @@ class JobStatusDisplay:
     def print_success(self, message: str):
         """Print a success message."""
         self.console.print(f"[green]✓ Success:[/green] {message}")
+    
+    def print_warning(self, message: str):
+        """Print a warning message."""
+        self.console.print(f"[yellow]{message}[/yellow]")
 
 
 def create_progress_spinner(description: str) -> Progress:

@@ -557,14 +557,24 @@ class RunLocalClient:
                 )
                 processed_results.append(benchmark_result)
             else:
-                raise RunLocalError(
-                    f"Benchmark failed for device {result.device_name}: {result.error}"
-                )
+                # Don't raise error for individual failures when we have partial results
+                # Just log the error and continue
+                if self.debug:
+                    print(f"Warning: Benchmark failed for device {result.device_name}: {result.error}")
 
+        # Check if we have at least some results
+        if not processed_results and len(results) < len(benchmark_ids):
+            print(f"\n⚠️  Warning: No benchmarks completed successfully. {len(benchmark_ids) - len(results)} jobs timed out.")
+        
         # Return single result or list based on device count
         if len(devices) == 1:
-            return processed_results[0] if processed_results else []
+            # For single device, return the result if available, otherwise raise error
+            if processed_results:
+                return processed_results[0]
+            else:
+                raise RunLocalError("No benchmark results available - all jobs failed or timed out")
         else:
+            # For multiple devices, always return a list (could be empty or partial)
             return processed_results
 
     def _run_predictions(
@@ -670,17 +680,25 @@ class RunLocalClient:
                     )
                     processed_results.append(prediction_result)
                 else:
-                    raise RunLocalError(
-                        f"Prediction completed but no output tensors found for device {result.device_name}"
-                    )
+                    if self.debug:
+                        print(f"Warning: Prediction completed but no output tensors found for device {result.device_name}")
             else:
-                # Prediction failed
-                raise RunLocalError(
-                    f"Prediction failed for device {result.device_name}: {result.error}"
-                )
+                # Don't raise error for individual failures when we have partial results
+                # Just log the error and continue
+                if self.debug:
+                    print(f"Warning: Prediction failed for device {result.device_name}: {result.error}")
 
+        # Check if we have at least some results
+        if not processed_results and len(results) < len(benchmark_ids):
+            print(f"\n⚠️  Warning: No predictions completed successfully. {len(benchmark_ids) - len(results)} jobs timed out.")
+        
         # Return single result or list based on device count
         if len(devices) == 1:
-            return processed_results[0] if processed_results else []
+            # For single device, return the result if available, otherwise raise error
+            if processed_results:
+                return processed_results[0]
+            else:
+                raise RunLocalError("No prediction results available - all jobs failed or timed out")
         else:
+            # For multiple devices, always return a list (could be empty or partial)
             return processed_results

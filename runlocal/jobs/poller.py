@@ -153,17 +153,20 @@ class JobPoller:
             total_time = time.time() - start_time
             display.print_summary(results, total_time)
 
-        # Check for timeout
+        # Check for timeout - but still return partial results
         if len(completed_ids) < len(job_ids):
             incomplete_count = len(job_ids) - len(completed_ids)
-            raise JobTimeoutError(
-                f"Timeout: Only {len(completed_ids)}/{len(job_ids)} {job_type.value}s "
-                f"completed within {timeout}s. {incomplete_count} still running. "
-                f"Try increasing the timeout parameter or check your network connection.",
-                timeout=timeout,
-                completed_jobs=len(completed_ids),
-                total_jobs=len(job_ids),
+            # Print warning about incomplete results
+            display.print_warning(
+                f"⚠️  Timeout: Only {len(completed_ids)}/{len(job_ids)} {job_type.value}s "
+                f"completed within {timeout}s. {incomplete_count} still running."
             )
+            
+            # Mark incomplete jobs as timed out in all_job_results
+            for job_result in all_job_results:
+                if job_result.job_id not in completed_ids:
+                    job_result.status = BenchmarkStatus.Running
+                    job_result.error = f"Timed out after {timeout}s"
 
         return results
 
