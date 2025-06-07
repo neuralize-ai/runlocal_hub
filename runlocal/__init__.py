@@ -7,6 +7,7 @@ from .models.benchmark import BenchmarkData, BenchmarkStatus
 from .models.tensor import IOType, TensorInfo
 from .devices.filters import DeviceFilters
 from .exceptions import RunLocalError, ConfigurationError, ValidationError, UploadError
+from .utils.display import display_benchmark_results, display_failed_benchmarks
 
 __version__ = "0.1.0"
 __all__ = [
@@ -24,5 +25,7 @@ __all__ = [
     "ConfigurationError",
     "ValidationError",
     "UploadError",
+    "display_benchmark_results",
+    "display_failed_benchmarks",
 ]
 

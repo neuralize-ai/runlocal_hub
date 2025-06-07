@@ -4,6 +4,7 @@ import numpy as np
 
 from runlocal.client import RunLocalClient
 from runlocal.devices import DeviceFilters
+from runlocal import display_benchmark_results, display_failed_benchmarks
 
 
 def main():
@@ -15,9 +16,6 @@ def main():
 
     device_filters = DeviceFilters(
         device_name="MacBook",  # Filter by device name
-        soc="Apple M3",  # Filter by SoC
-        ram_min=18,  # Minimum RAM requirement
-        ram_max=18,  # Maximum RAM requirement
     )
 
     try:
@@ -28,34 +26,19 @@ def main():
             timeout=300,  # 5 minute timeout
         )
 
-        if isinstance(result, list):
-            result = result[0]
+        # Ensure result is a list for display function
+        results = result if isinstance(result, list) else [result]
 
-        print("Benchmark Results:")
-        print(
-            f"\nDevice: {result.device.Name} ({result.device.Soc}, {result.device.Ram}GB RAM)"
-        )
-        print(f"Job ID: {result.job_id}")
-        print(f"Status: {result.status}")
-        print(f"Elapsed time: {result.elapsed_time:.2f}s")
+        # Display results using the new helper function
+        display_benchmark_results(results)
 
-        print(f"\nPerformance data for {len(result.benchmark_data)} compute unit(s):")
-        for bd in result.benchmark_data:
-            if bd.Success:
-                print(f"\n{bd.ComputeUnit}:")
-                if bd.LoadMsArray:
-                    print(f"  Median Load time: {np.median(bd.LoadMsArray):.2f} ms")
-                if bd.InferenceMsArray:
-                    print(
-                        f"  Median Inference time: {np.median(bd.InferenceMsArray):.2f} ms"
-                    )
-            else:
-                print(f"\n{bd.ComputeUnit}: FAILED")
+        # Display any failures
+        display_failed_benchmarks(results)
 
         # Show output tensor file paths if available
-        if result.outputs:
+        if results[0].outputs:
             print("\nOutput tensor files saved:")
-            for compute_unit, tensors in result.outputs.items():
+            for compute_unit, tensors in results[0].outputs.items():
                 print(f"  {compute_unit}:")
                 for name, path in tensors.items():
                     print(f"    {name}: {path}")
