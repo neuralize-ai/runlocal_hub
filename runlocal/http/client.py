@@ -284,3 +284,31 @@ class HTTPClient:
 
         except requests.exceptions.RequestException as e:
             raise Exception(f"Network error during download: {str(e)}")
+
+    def download_from_url(self, url: str) -> bytes:
+        """
+        Download binary data from a presigned URL.
+
+        Args:
+            url: Full URL to download from
+
+        Returns:
+            Binary data
+
+        Raises:
+            Exception: For download errors
+        """
+        try:
+            # Don't send authentication headers for presigned URLs
+            response = requests.get(url)
+
+            if response.status_code != 200:
+                error_detail = response.text
+                raise Exception(
+                    f"Download failed with status {response.status_code}: {error_detail}"
+                )
+
+            return response.content
+
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Network error during download: {str(e)}")
