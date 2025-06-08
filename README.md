@@ -1,6 +1,6 @@
 # RunLocal Python Client
 
-A Python client library for benchmarking and running machine learning models on real devices through the RunLocal API.
+A Python client library for benchmarking and running machine learning models on real devices through the [RunLocal](https://edgemeter.runlocal.ai) API.
 
 ## What is RunLocal?
 
@@ -29,9 +29,9 @@ pip install .
 
 ## Authentication
 
-You'll need an API key to use the RunLocal API. You can generate one in the RunLocal web interface:
+You'll need an API key to use the RunLocal API. You can generate one on the RunLocal web interface:
 
-1. Log in to RunLocal
+1. Log in to [RunLocal](https://edgemeter.runlocal.ai)
 2. Go to your user settings (avatar dropdown)
 3. Navigate to the "API Keys" section
 4. Click "Create New API Key"
