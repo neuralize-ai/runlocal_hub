@@ -10,7 +10,7 @@ import numpy as np
 
 from ..exceptions import TensorError
 from ..http import HTTPClient
-from ..models import IOTensorsMetadata, IOType
+from ..models import IOTensorsMetadata, IOTensorsPresignedUrlResponse, IOType
 from ..utils.decorators import handle_api_errors
 
 
@@ -273,7 +273,7 @@ class TensorHandler:
 
     def _download_from_api(self, tensors_id: str) -> bytes:
         """
-        Download NPZ data from the API.
+        Download NPZ data from the API using presigned URL.
 
         Args:
             tensors_id: ID of tensors to download
@@ -285,7 +285,14 @@ class TensorHandler:
             TensorError: If download fails
         """
         try:
-            endpoint = f"/io-tensors/{tensors_id}/download"
-            return self.http_client.download_binary(endpoint)
+            # Get presigned URL
+            endpoint = f"/io-tensors/{tensors_id}/presigned-url"
+            response = self.http_client.get(endpoint)
+            
+            # Parse response into our model
+            presigned_response = IOTensorsPresignedUrlResponse(**response)
+            
+            # Download from presigned URL
+            return self.http_client.download_from_url(presigned_response.presigned_url)
         except Exception as e:
             raise TensorError(f"Failed to download tensors: {str(e)}")
