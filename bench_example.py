@@ -2,9 +2,7 @@
 
 import numpy as np
 
-from runlocal.client import RunLocalClient
-from runlocal.devices import DeviceFilters
-from runlocal import display_benchmark_results
+from runlocal import DeviceFilters, RunLocalClient, display_benchmark_results
 
 
 def main():

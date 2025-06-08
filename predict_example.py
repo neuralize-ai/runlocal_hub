@@ -2,8 +2,7 @@
 
 import numpy as np
 
-from runlocal.client import RunLocalClient
-from runlocal.devices import DeviceFilters
+from runlocal import DeviceFilters, RunLocalClient
 
 
 def main():
