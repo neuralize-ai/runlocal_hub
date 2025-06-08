@@ -28,4 +28,3 @@ __all__ = [
     "display_benchmark_results",
     "display_failed_benchmarks",
 ]
-

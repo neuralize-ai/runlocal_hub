@@ -231,11 +231,11 @@ class DeviceSelector:
         # Apply each filter and collect unique devices
         seen_device_ids = set()
         filtered_devices = []
-        
+
         for filters in filters_list:
             # Apply this filter set
             matches = self._apply_filters(all_devices, filters)
-            
+
             # Add unique devices to result
             for device_usage in matches:
                 device_id = device_usage.device.to_device_id()
@@ -265,22 +265,25 @@ class DeviceSelector:
                     filter_details["os"] = filters.os
                 if filters.compute_units:
                     filter_details["compute_units"] = filters.compute_units
-                
+
                 if filter_details:
-                    filter_description = ", ".join([f"{k}={v}" for k, v in filter_details.items()])
-                    all_filter_details.append(f"Filter {i+1}: {filter_description}")
+                    filter_description = ", ".join(
+                        [f"{k}={v}" for k, v in filter_details.items()]
+                    )
+                    all_filter_details.append(f"Filter {i + 1}: {filter_description}")
 
             error_message = (
-                f"No devices match any of the specified criteria:\n"
-                + "\n".join(all_filter_details) + "\n"
+                "No devices match any of the specified criteria:\n"
+                + "\n".join(all_filter_details)
+                + "\n"
             )
             error_message += f"Found {len(all_devices)} total devices for this model. "
             error_message += "Try relaxing your filter conditions."
 
             raise DeviceNotAvailableError(
-                error_message, 
-                filters_used={"filters": all_filter_details}, 
-                available_count=len(all_devices)
+                error_message,
+                filters_used={"filters": all_filter_details},
+                available_count=len(all_devices),
             )
 
         # Apply count logic: None means all devices, otherwise limit to count

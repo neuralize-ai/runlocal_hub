@@ -183,5 +183,5 @@ class BenchmarkDbItem(BaseModel):
 
     def to_dict(self):
         """Convert to dictionary."""
-        d = self.dict()
+        d = self.model_dump()
         return d

@@ -2,8 +2,7 @@
 Rich console output utilities for job status display.
 """
 
-from datetime import datetime
-from typing import List, Optional
+from typing import List
 
 from rich.console import Console
 from rich.table import Table
@@ -45,7 +44,7 @@ class JobStatusDisplay:
         """Create a rich table showing job statuses."""
         # Format elapsed time display
         elapsed_display = f"⏱ Elapsed: {elapsed_time}s"
-        
+
         table = Table(
             title=f"{job_type.value.title()} Jobs Status - {elapsed_display}",
             show_header=True,
@@ -90,7 +89,7 @@ class JobStatusDisplay:
             soc = ""
             ram = ""
             year = ""
-            
+
             if result.device:
                 soc = result.device.Soc
                 ram = f"{result.device.Ram}GB"
@@ -108,13 +107,17 @@ class JobStatusDisplay:
 
         return table
 
-    def start_live_display(self, initial_results: List[JobResult], job_type: JobType, elapsed_time: int = 0):
+    def start_live_display(
+        self, initial_results: List[JobResult], job_type: JobType, elapsed_time: int = 0
+    ):
         """Start a live updating display."""
         self._table = self.create_status_table(initial_results, job_type, elapsed_time)
         self._live = Live(self._table, console=self.console, refresh_per_second=2)
         self._live.start()
 
-    def update_display(self, job_results: List[JobResult], job_type: JobType, elapsed_time: int = 0):
+    def update_display(
+        self, job_results: List[JobResult], job_type: JobType, elapsed_time: int = 0
+    ):
         """Update the live display with new results."""
         if self._live and self._live.is_started:
             self._table = self.create_status_table(job_results, job_type, elapsed_time)
@@ -130,7 +133,7 @@ class JobStatusDisplay:
         successful = sum(1 for r in job_results if r.status == BenchmarkStatus.Complete)
         failed = sum(1 for r in job_results if r.status == BenchmarkStatus.Failed)
 
-        summary_text = f"[bold]Summary:[/bold]\n"
+        summary_text = "[bold]Summary:[/bold]\n"
         summary_text += f"✓ Successful: [green]{successful}[/green]\n"
         summary_text += f"✗ Failed: [red]{failed}[/red]\n"
         summary_text += f"⏱ Total time: {int(total_time)}s"
@@ -153,19 +156,7 @@ class JobStatusDisplay:
     def print_success(self, message: str):
         """Print a success message."""
         self.console.print(f"[green]✓ Success:[/green] {message}")
-    
+
     def print_warning(self, message: str):
         """Print a warning message."""
         self.console.print(f"[yellow]{message}[/yellow]")
-
-
-def create_progress_spinner(description: str) -> Progress:
-    """Create a progress spinner for operations."""
-    return Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        TimeElapsedColumn(),
-        console=Console(),
-        transient=True,
-    )
-

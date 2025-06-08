@@ -36,4 +36,3 @@ class DeviceUsage(BaseModel):
 
     device: Device
     compute_units: List[str]
-

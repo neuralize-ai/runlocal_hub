@@ -288,10 +288,10 @@ class TensorHandler:
             # Get presigned URL
             endpoint = f"/io-tensors/{tensors_id}/presigned-url"
             response = self.http_client.get(endpoint)
-            
+
             # Parse response into our model
             presigned_response = IOTensorsPresignedUrlResponse(**response)
-            
+
             # Download from presigned URL
             return self.http_client.download_from_url(presigned_response.presigned_url)
         except Exception as e:

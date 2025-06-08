@@ -193,4 +193,3 @@ def display_failed_benchmarks(
         if benchmark_data.Stderr:
             console.print("[red]Stderr:[/red]")
             console.print(benchmark_data.Stderr)
-

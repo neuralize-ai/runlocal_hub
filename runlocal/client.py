@@ -533,7 +533,7 @@ class RunLocalClient:
 
         # Process results and download output tensors if needed
         processed_results = []
-        for i, result in enumerate(results):
+        for result in results:
             if result.is_successful and result.data:
                 # Extract device info and benchmark data
                 device_info = result.data.get("DeviceInfo", {})

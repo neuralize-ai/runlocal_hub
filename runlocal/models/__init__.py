@@ -1,4 +1,9 @@
-from .benchmark import BenchmarkData, BenchmarkDataFloat, BenchmarkDbItem, BenchmarkStatus
+from .benchmark import (
+    BenchmarkData,
+    BenchmarkDataFloat,
+    BenchmarkDbItem,
+    BenchmarkStatus,
+)
 from .benchmark_result import BenchmarkResult
 from .device import Device, DeviceUsage
 from .job import JobResult, JobType
@@ -21,4 +26,3 @@ __all__ = [
     "JobType",
     "PredictionResult",
 ]
-
