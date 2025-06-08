@@ -31,3 +31,11 @@ class IOTensorsMetadata(BaseModel):
     TensorMetadata: Dict[str, TensorInfo]
     SourceBenchmarkIds: Optional[List[str]] = None
     CreatedUtc: str
+
+
+class IOTensorsPresignedUrlResponse(BaseModel):
+    """Response containing presigned URL for tensor download."""
+    
+    tensors_id: str
+    presigned_url: str
+    expires_in_seconds: int
