@@ -333,14 +333,6 @@ class RunLocalClient:
                 got="both provided",
             )
 
-        # Normalize device_filters to a list
-        if device_filters is None:
-            device_filters_list = [DeviceFilters()]
-        elif isinstance(device_filters, DeviceFilters):
-            device_filters_list = [device_filters]
-        else:
-            device_filters_list = device_filters
-
         # Upload model if path provided
         if model_path is not None:
             if self.debug:
@@ -350,14 +342,14 @@ class RunLocalClient:
         if model_id is None:
             raise RunLocalError("Model upload failed")
 
-        # Select devices using our device selector with multiple filters
+        # Select devices using our device selector
         if self.debug:
             print("Selecting devices...")
 
         user_models = self.get_models()
-        devices = self.device_selector.select_devices_multi(
+        devices = self.device_selector.select_devices(
             model_id=model_id,
-            filters_list=device_filters_list,
+            filters=device_filters,
             count=device_count,
             user_models=user_models,
         )
@@ -425,10 +417,6 @@ class RunLocalClient:
                 expected="either model_path or model_id",
                 got="both provided",
             )
-
-        # Use default filters if none provided
-        if device_filters is None:
-            device_filters = DeviceFilters()
 
         # Upload model if path provided
         if model_path is not None:

@@ -9,7 +9,6 @@ from rich.table import Table
 from rich.live import Live
 from rich.text import Text
 from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 from ..models.benchmark import BenchmarkStatus
 from ..models.job import JobResult, JobType
