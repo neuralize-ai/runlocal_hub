@@ -11,6 +11,5 @@ class PredictionResult(BaseModel):
         str, Dict[str, str]
     ]  # Dict[compute_unit, Dict[tensor_name, file_path]]
     job_id: str
-    elapsed_time: float
     status: str
     model_id: str

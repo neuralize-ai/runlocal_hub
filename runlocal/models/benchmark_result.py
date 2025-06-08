@@ -10,11 +10,9 @@ class BenchmarkResult(BaseModel):
     device: Device
     benchmark_data: List[BenchmarkDataFloat]
     job_id: str
-    elapsed_time: float
     status: str
     model_id: str
     # Optional output tensor file paths
     outputs: Optional[Dict[str, Dict[str, str]]] = (
         None  # Dict[compute_unit, Dict[tensor_name, file_path]]
     )
-

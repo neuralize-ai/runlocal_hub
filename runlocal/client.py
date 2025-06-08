@@ -571,7 +571,6 @@ class RunLocalClient:
                     device=device,
                     benchmark_data=benchmark_data,
                     job_id=result.job_id,
-                    elapsed_time=result.elapsed_time or 0.0,
                     status=result.data.get("Status", "Unknown"),
                     model_id=result.data.get("UploadId", ""),
                     outputs=output_tensors,
@@ -701,7 +700,6 @@ class RunLocalClient:
                         device=device,
                         outputs=compute_unit_outputs,
                         job_id=result.job_id,
-                        elapsed_time=result.elapsed_time or 0.0,
                         status=result.data.get("Status", "Unknown"),
                         model_id=result.data.get("UploadId", ""),
                     )

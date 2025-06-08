@@ -15,6 +15,9 @@ def main():
 
     device_filters = DeviceFilters(
         device_name="MacBook",  # Filter by device name
+        soc="Apple M3",  # Filter by SoC
+        ram_min=18,  # Minimum RAM requirement
+        ram_max=18,  # Maximum RAM requirement
     )
 
     try:
@@ -34,7 +37,6 @@ def main():
         )
         print(f"Job ID: {result.job_id}")
         print(f"Status: {result.status}")
-        print(f"Elapsed time: {result.elapsed_time:.2f}s")
 
         for compute_unit, output_tensors in result.outputs.items():
             print(f"\nOutputs for compute unit '{compute_unit}':")
