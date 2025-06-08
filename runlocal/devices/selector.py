@@ -2,6 +2,7 @@
 Device selection and filtering logic.
 """
 
+import random
 from typing import List, Optional
 
 from rich.console import Console
@@ -153,7 +154,8 @@ class DeviceSelector:
 
         # Apply count logic: 0 means all devices, otherwise limit to count
         if count is not None and len(filtered_devices) > count:
-            filtered_devices = filtered_devices[:count]
+            # Randomly select 'count' devices from the filtered list
+            filtered_devices = random.sample(filtered_devices, count)
 
         return filtered_devices
 
@@ -283,7 +285,8 @@ class DeviceSelector:
 
         # Apply count logic: None means all devices, otherwise limit to count
         if count is not None and len(filtered_devices) > count:
-            filtered_devices = filtered_devices[:count]
+            # Randomly select 'count' devices from the filtered list
+            filtered_devices = random.sample(filtered_devices, count)
 
         return filtered_devices
 
