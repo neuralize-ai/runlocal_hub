@@ -55,8 +55,7 @@ See the following example files for different usage patterns:
 The API uses `DeviceFilters` for intuitive device selection:
 
 ```python
-from runlocal.client import RunLocalClient
-from runlocal.devices import DeviceFilters
+from runlocal import DeviceFilters, RunLocalClient
 
 client = RunLocalClient()
 
