@@ -62,11 +62,14 @@ client = RunLocalClient()
 # Filter by device characteristics
 device_filters = DeviceFilters(
     device_name="MacBook",     # Device name pattern
-    soc="Apple M3",           # SoC type
-    ram_min=16,               # Minimum RAM (GB)
-    ram_max=32,               # Maximum RAM (GB)
-    year_min=2022             # Minimum device year
-    compute_units=["CPU_AND_GPU", "CPU_AND_NE"]     # Compute units to run
+    soc="Apple M3",            # SoC type
+    ram_min=16,                # Minimum RAM (GB)
+    ram_max=32,                # Maximum RAM (GB)
+    year_min=2022              # Minimum device year
+    compute_units=[            # Compute units to run
+        "CPU_AND_GPU",
+        "CPU_AND_NE"
+    ]
 )
 
 # Run benchmark with filters
