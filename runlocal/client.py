@@ -114,6 +114,9 @@ class RunLocalClient:
     def upload_model(
         self,
         model_path: Union[Path, str],
+        model_pipeline_id: Optional[str] = None,
+        torchscript_upload_id: Optional[str] = None,
+        keras_upload_id: Optional[str] = None,
         show_progress: bool = True,
     ) -> str:
         """
@@ -121,6 +124,9 @@ class RunLocalClient:
 
         Args:
             model_path: Path to the model file or folder to upload
+            model_pipeline_id: Optional model pipeline to link the model to
+            torchscript_upload_id: Optional torchscript model to link the model to
+            keras_upload_id: Optional tensorflow model to link the model to
             show_progress: Whether to show progress bar
 
         Returns:
@@ -157,6 +163,15 @@ class RunLocalClient:
                 "upload_filename": upload_filename,
                 "upload_source_type": "USER_UPLOADED",
             }
+
+            if model_pipeline_id is not None:
+                params["model_pipeline_id"] = model_pipeline_id
+
+            if torchscript_upload_id is not None:
+                params["torch_script_upload_id"] = torchscript_upload_id
+
+            if keras_upload_id is not None:
+                params["keras_upload_id"] = keras_upload_id
 
             # Read the zip file
             with open(zip_path, "rb") as f:
@@ -560,19 +575,25 @@ class RunLocalClient:
                 # Don't raise error for individual failures when we have partial results
                 # Just log the error and continue
                 if self.debug:
-                    print(f"Warning: Benchmark failed for device {result.device_name}: {result.error}")
+                    print(
+                        f"Warning: Benchmark failed for device {result.device_name}: {result.error}"
+                    )
 
         # Check if we have at least some results
         if not processed_results and len(results) < len(benchmark_ids):
-            print(f"\n⚠️  Warning: No benchmarks completed successfully. {len(benchmark_ids) - len(results)} jobs timed out.")
-        
+            print(
+                f"\n⚠️  Warning: No benchmarks completed successfully. {len(benchmark_ids) - len(results)} jobs timed out."
+            )
+
         # Return single result or list based on device count
         if len(devices) == 1:
             # For single device, return the result if available, otherwise raise error
             if processed_results:
                 return processed_results[0]
             else:
-                raise RunLocalError("No benchmark results available - all jobs failed or timed out")
+                raise RunLocalError(
+                    "No benchmark results available - all jobs failed or timed out"
+                )
         else:
             # For multiple devices, always return a list (could be empty or partial)
             return processed_results
@@ -681,24 +702,32 @@ class RunLocalClient:
                     processed_results.append(prediction_result)
                 else:
                     if self.debug:
-                        print(f"Warning: Prediction completed but no output tensors found for device {result.device_name}")
+                        print(
+                            f"Warning: Prediction completed but no output tensors found for device {result.device_name}"
+                        )
             else:
                 # Don't raise error for individual failures when we have partial results
                 # Just log the error and continue
                 if self.debug:
-                    print(f"Warning: Prediction failed for device {result.device_name}: {result.error}")
+                    print(
+                        f"Warning: Prediction failed for device {result.device_name}: {result.error}"
+                    )
 
         # Check if we have at least some results
         if not processed_results and len(results) < len(benchmark_ids):
-            print(f"\n⚠️  Warning: No predictions completed successfully. {len(benchmark_ids) - len(results)} jobs timed out.")
-        
+            print(
+                f"\n⚠️  Warning: No predictions completed successfully. {len(benchmark_ids) - len(results)} jobs timed out."
+            )
+
         # Return single result or list based on device count
         if len(devices) == 1:
             # For single device, return the result if available, otherwise raise error
             if processed_results:
                 return processed_results[0]
             else:
-                raise RunLocalError("No prediction results available - all jobs failed or timed out")
+                raise RunLocalError(
+                    "No prediction results available - all jobs failed or timed out"
+                )
         else:
             # For multiple devices, always return a list (could be empty or partial)
             return processed_results
