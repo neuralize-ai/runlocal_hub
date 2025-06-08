@@ -52,7 +52,7 @@ See the following example files for different usage patterns:
 
 ### Device Filtering
 
-The new API uses `DeviceFilters` for intuitive device selection:
+The API uses `DeviceFilters` for intuitive device selection:
 
 ```python
 from runlocal.client import RunLocalClient
@@ -93,6 +93,22 @@ results = client.benchmark(
 results = client.benchmark(
     model_path="model.mlpackage",
     device_filters=DeviceFilters(device_name="MacBook"),
+    count=None  # None means use all matching devices
+)
+
+results = client.benchmark(
+    model_path="model.onnx",
+    device_filters=[
+        # M1 or M2 Macs
+        DeviceFilters(os="macOS", soc="M1"),
+        DeviceFilters(os="macOS", soc="M2"),
+
+        # High-end iPhones (6GB+ RAM)
+        DeviceFilters(device_name="iPhone", ram_min=6),
+
+        # Windows machines with 16GB+ RAM
+        DeviceFilters(os="Windows", ram_min=16),
+    ],
     count=None  # None means use all matching devices
 )
 

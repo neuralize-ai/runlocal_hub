@@ -15,9 +15,6 @@ def main():
 
     device_filters = DeviceFilters(
         device_name="MacBook",  # Filter by device name
-        soc="Apple M3",  # Filter by SoC
-        ram_min=18,  # Minimum RAM requirement
-        ram_max=18,  # Maximum RAM requirement
     )
 
     try:
