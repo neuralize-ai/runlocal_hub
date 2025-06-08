@@ -5,7 +5,6 @@ Job polling logic for async operations.
 import time
 from typing import Callable, List, Optional, Set
 
-from ..exceptions import JobTimeoutError
 from ..http import HTTPClient
 from ..models import BenchmarkDbItem, BenchmarkStatus, JobResult, JobType
 from ..utils.console import JobStatusDisplay
@@ -80,12 +79,11 @@ class JobPoller:
                     job_id=job_id,
                     status=BenchmarkStatus.Pending,
                     device_name=device_name_map.get(job_id),
-                    elapsed_time=0,
                 )
             )
 
         # Start live display
-        display.start_live_display(all_job_results, job_type)
+        display.start_live_display(all_job_results, job_type, 0)
 
         try:
             while self._should_continue(start_time, timeout, completed_ids, job_ids):
@@ -101,7 +99,6 @@ class JobPoller:
                         result = self._check_job_status(
                             job_id=job_id,
                             device_name=device_name_map.get(job_id),
-                            elapsed_time=elapsed,
                         )
 
                         # Update the job result in our tracking list
@@ -110,8 +107,7 @@ class JobPoller:
                                 if result is not None:
                                     all_job_results[j] = result
                                 else:
-                                    # Job still running, update elapsed time
-                                    all_job_results[j].elapsed_time = elapsed
+                                    # Job still running, update status
                                     all_job_results[j].status = BenchmarkStatus.Running
                                 break
 
@@ -129,14 +125,13 @@ class JobPoller:
                             if job_result.job_id == job_id:
                                 all_job_results[j].status = BenchmarkStatus.Failed
                                 all_job_results[j].error = str(e)
-                                all_job_results[j].elapsed_time = elapsed
                                 break
                         display.print_error(
                             f"Error checking {job_type.value} {job_id}: {e}"
                         )
 
                 # Update display with current status
-                display.update_display(all_job_results, job_type)
+                display.update_display(all_job_results, job_type, elapsed)
 
                 # Break if all jobs complete
                 if len(completed_ids) == len(job_ids):
@@ -161,7 +156,7 @@ class JobPoller:
                 f"⚠️  Timeout: Only {len(completed_ids)}/{len(job_ids)} {job_type.value}s "
                 f"completed within {timeout}s. {incomplete_count} still running."
             )
-            
+
             # Mark incomplete jobs as timed out in all_job_results
             for job_result in all_job_results:
                 if job_result.job_id not in completed_ids:
@@ -209,16 +204,13 @@ class JobPoller:
         self,
         job_id: str,
         device_name: Optional[str] = None,
-        elapsed_time: Optional[int] = None,
     ) -> Optional[JobResult]:
         """
         Check the status of a single job.
 
         Args:
             job_id: Job ID to check
-            job_type: Type of job
             device_name: Optional device name
-            elapsed_time: Optional elapsed time since start
 
         Returns:
             JobResult with current status
@@ -245,7 +237,6 @@ class JobPoller:
             device=benchmark.DeviceInfo,
             data=result_data,
             error=error,
-            elapsed_time=elapsed_time,
         )
 
     def _should_continue(

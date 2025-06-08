@@ -29,7 +29,6 @@ class JobResult:
     device: Optional[Device] = None
     data: Optional[Any] = None
     error: Optional[str] = None
-    elapsed_time: Optional[int] = None
 
     @property
     def is_complete(self) -> bool:

@@ -40,11 +40,14 @@ class JobStatusDisplay:
         self._table = None
 
     def create_status_table(
-        self, job_results: List[JobResult], job_type: JobType
+        self, job_results: List[JobResult], job_type: JobType, elapsed_time: int = 0
     ) -> Table:
         """Create a rich table showing job statuses."""
+        # Format elapsed time display
+        elapsed_display = f"⏱ Elapsed: {elapsed_time}s"
+        
         table = Table(
-            title=f"{job_type.value.title()} Jobs Status",
+            title=f"{job_type.value.title()} Jobs Status - {elapsed_display}",
             show_header=True,
             header_style="bold magenta",
             show_lines=True,
@@ -58,7 +61,6 @@ class JobStatusDisplay:
         table.add_column("RAM", min_width=8)
         table.add_column("Year", min_width=6)
         table.add_column("Status", justify="center", min_width=12)
-        table.add_column("Elapsed", justify="right")
         table.add_column("Details", min_width=30)
 
         # Add rows
@@ -66,12 +68,6 @@ class JobStatusDisplay:
             status_text = Text(
                 result.status.value, style=StatusColors.get_color(result.status)
             )
-
-            # Format elapsed time
-            if result.elapsed_time:
-                elapsed = f"{int(result.elapsed_time)}s"
-            else:
-                elapsed = "-"
 
             # Format details
             details = ""
@@ -107,22 +103,21 @@ class JobStatusDisplay:
                 ram,
                 year,
                 status_text,
-                elapsed,
                 details,
             )
 
         return table
 
-    def start_live_display(self, initial_results: List[JobResult], job_type: JobType):
+    def start_live_display(self, initial_results: List[JobResult], job_type: JobType, elapsed_time: int = 0):
         """Start a live updating display."""
-        self._table = self.create_status_table(initial_results, job_type)
+        self._table = self.create_status_table(initial_results, job_type, elapsed_time)
         self._live = Live(self._table, console=self.console, refresh_per_second=2)
         self._live.start()
 
-    def update_display(self, job_results: List[JobResult], job_type: JobType):
+    def update_display(self, job_results: List[JobResult], job_type: JobType, elapsed_time: int = 0):
         """Update the live display with new results."""
         if self._live and self._live.is_started:
-            self._table = self.create_status_table(job_results, job_type)
+            self._table = self.create_status_table(job_results, job_type, elapsed_time)
             self._live.update(self._table)
 
     def stop_display(self):
