@@ -8,7 +8,7 @@ from runlocal import DeviceFilters, RunLocalClient, display_benchmark_results
 def main():
     client = RunLocalClient()
 
-    model_path = "./models/HorizonAngle_exp0.mlpackage"
+    model_path = "resnet-50.mlpackage"
     image = np.zeros([1, 3, 224, 224]).astype(np.float32)
     inputs = {"image": image}
 

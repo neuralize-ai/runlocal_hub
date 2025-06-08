@@ -8,15 +8,12 @@ from runlocal import DeviceFilters, RunLocalClient
 def main():
     client = RunLocalClient()
 
-    model_path = "./models/HorizonAngle_exp0.mlpackage"
+    model_path = "resnet-50.mlpackage"
     image = np.zeros([1, 3, 224, 224]).astype(np.float32)
     inputs = {"image": image}
 
     device_filters = DeviceFilters(
         device_name="MacBook",  # Filter by device name
-        soc="Apple M3",  # Filter by SoC
-        ram_min=18,  # Minimum RAM requirement
-        ram_max=18,  # Maximum RAM requirement
     )
 
     try:
