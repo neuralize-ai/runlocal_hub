@@ -285,7 +285,7 @@ class RunLocalClient:
         self,
         model_path: Optional[Union[Path, str]] = None,
         model_id: Optional[str] = None,
-        device_filters: Optional[DeviceFilters] = None,
+        device_filters: Optional[Union[DeviceFilters, List[DeviceFilters]]] = None,
         inputs: Optional[Dict[str, np.ndarray]] = None,
         timeout: int = 600,
         poll_interval: int = 10,
@@ -299,7 +299,8 @@ class RunLocalClient:
         Args:
             model_path: Path to the model file or folder (if model_id not provided)
             model_id: ID of already uploaded model (if model_path not provided)
-            device_filters: Optional filters for device selection
+            device_filters: Optional filters for device selection. Can be a single DeviceFilters
+                          object or a list of DeviceFilters to apply with OR logic (union)
             inputs: Optional dictionary mapping input names to numpy arrays
             timeout: Maximum time in seconds to wait for completion
             poll_interval: Time in seconds between status checks
@@ -332,9 +333,13 @@ class RunLocalClient:
                 got="both provided",
             )
 
-        # Use default filters if none provided
+        # Normalize device_filters to a list
         if device_filters is None:
-            device_filters = DeviceFilters()
+            device_filters_list = [DeviceFilters()]
+        elif isinstance(device_filters, DeviceFilters):
+            device_filters_list = [device_filters]
+        else:
+            device_filters_list = device_filters
 
         # Upload model if path provided
         if model_path is not None:
@@ -345,14 +350,14 @@ class RunLocalClient:
         if model_id is None:
             raise RunLocalError("Model upload failed")
 
-        # Select devices using our device selector
+        # Select devices using our device selector with multiple filters
         if self.debug:
             print("Selecting devices...")
 
         user_models = self.get_models()
-        devices = self.device_selector.select_devices(
+        devices = self.device_selector.select_devices_multi(
             model_id=model_id,
-            filters=device_filters,
+            filters_list=device_filters_list,
             count=device_count,
             user_models=user_models,
         )
@@ -375,7 +380,7 @@ class RunLocalClient:
         inputs: Dict[str, np.ndarray],
         model_path: Optional[Union[Path, str]] = None,
         model_id: Optional[str] = None,
-        device_filters: Optional[DeviceFilters] = None,
+        device_filters: Optional[Union[DeviceFilters, List[DeviceFilters]]] = None,
         timeout: int = 600,
         poll_interval: int = 10,
         show_progress: bool = True,
@@ -389,7 +394,8 @@ class RunLocalClient:
             inputs: Dictionary mapping input names to numpy arrays
             model_path: Path to the model file or folder (if model_id not provided)
             model_id: ID of already uploaded model (if model_path not provided)
-            device_filters: Optional filters for device selection
+            device_filters: Optional filters for device selection. Can be a single DeviceFilters
+                          object or a list of DeviceFilters to apply with OR logic (union)
             timeout: Maximum time in seconds to wait for completion
             poll_interval: Time in seconds between status checks
             show_progress: Whether to show upload progress bar

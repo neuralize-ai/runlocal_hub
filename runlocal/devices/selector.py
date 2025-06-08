@@ -186,6 +186,107 @@ class DeviceSelector:
 
         return devices[0] if devices else None
 
+    def select_devices_multi(
+        self,
+        model_id: str,
+        filters_list: List[DeviceFilters],
+        count: Optional[int] = 1,
+        user_models: Optional[List[str]] = None,
+    ) -> List[DeviceUsage]:
+        """
+        Select devices based on multiple filter criteria with OR logic (union).
+
+        Args:
+            model_id: ID of the model to get compatible devices for
+            filters_list: List of device filtering criteria to apply with union logic
+            count: Number of devices to select (default: 1, None = all matching devices)
+            user_models: Optional list of user's models for validation
+
+        Returns:
+            List of matching devices (union of all filter matches)
+
+        Raises:
+            ValueError: If model_id doesn't belong to user
+            DeviceNotAvailableError: If no devices match any criteria
+        """
+        # Validate model_id if user_models provided
+        if user_models is not None and model_id not in user_models:
+            from ..exceptions import ModelNotFoundError
+
+            available_models_str = f"Available models: {', '.join(user_models[:5])}"
+            if len(user_models) > 5:
+                available_models_str += f" ... and {len(user_models) - 5} more"
+
+            raise ModelNotFoundError(
+                f"Model '{model_id}' not found in your account. {available_models_str}",
+                model_id=model_id,
+                available_models=user_models,
+            )
+
+        # Get all available devices for this model
+        all_devices = self.list_all_devices(model_id=model_id)
+
+        # Apply each filter and collect unique devices
+        seen_device_ids = set()
+        filtered_devices = []
+        
+        for filters in filters_list:
+            # Apply this filter set
+            matches = self._apply_filters(all_devices, filters)
+            
+            # Add unique devices to result
+            for device_usage in matches:
+                device_id = device_usage.device.to_device_id()
+                if device_id not in seen_device_ids:
+                    seen_device_ids.add(device_id)
+                    filtered_devices.append(device_usage)
+
+        # Check if any devices matched
+        if not filtered_devices:
+            # Create helpful error message with all filter details
+            all_filter_details = []
+            for i, filters in enumerate(filters_list):
+                filter_details = {}
+                if filters.device_name:
+                    filter_details["device_name"] = filters.device_name
+                if filters.soc:
+                    filter_details["soc"] = filters.soc
+                if filters.ram_min:
+                    filter_details["ram_min"] = f"{filters.ram_min}GB"
+                if filters.ram_max:
+                    filter_details["ram_max"] = f"{filters.ram_max}GB"
+                if filters.year_min:
+                    filter_details["year_min"] = filters.year_min
+                if filters.year_max:
+                    filter_details["year_max"] = filters.year_max
+                if filters.os:
+                    filter_details["os"] = filters.os
+                if filters.compute_units:
+                    filter_details["compute_units"] = filters.compute_units
+                
+                if filter_details:
+                    filter_description = ", ".join([f"{k}={v}" for k, v in filter_details.items()])
+                    all_filter_details.append(f"Filter {i+1}: {filter_description}")
+
+            error_message = (
+                f"No devices match any of the specified criteria:\n"
+                + "\n".join(all_filter_details) + "\n"
+            )
+            error_message += f"Found {len(all_devices)} total devices for this model. "
+            error_message += "Try relaxing your filter conditions."
+
+            raise DeviceNotAvailableError(
+                error_message, 
+                filters_used={"filters": all_filter_details}, 
+                available_count=len(all_devices)
+            )
+
+        # Apply count logic: None means all devices, otherwise limit to count
+        if count is not None and len(filtered_devices) > count:
+            filtered_devices = filtered_devices[:count]
+
+        return filtered_devices
+
     def _apply_filters(
         self,
         devices: List[DeviceUsage],
