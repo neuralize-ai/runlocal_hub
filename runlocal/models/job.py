@@ -7,6 +7,7 @@ from enum import Enum
 from typing import Any, Optional
 
 from ..models import BenchmarkStatus
+from .device import Device
 
 
 class JobType(str, Enum):
@@ -25,6 +26,7 @@ class JobResult:
     job_id: str
     status: BenchmarkStatus
     device_name: Optional[str] = None
+    device: Optional[Device] = None
     data: Optional[Any] = None
     error: Optional[str] = None
     elapsed_time: Optional[int] = None

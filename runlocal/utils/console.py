@@ -53,7 +53,10 @@ class JobStatusDisplay:
 
         # Add columns
         table.add_column("Job ID", style="dim", width=12)
-        table.add_column("Device", min_width=20)
+        table.add_column("Device", min_width=25)
+        table.add_column("SoC", min_width=12)
+        table.add_column("RAM", min_width=8)
+        table.add_column("Year", min_width=6)
         table.add_column("Status", justify="center", min_width=12)
         table.add_column("Elapsed", justify="right")
         table.add_column("Details", min_width=30)
@@ -86,9 +89,23 @@ class JobStatusDisplay:
             elif result.status == BenchmarkStatus.Pending:
                 details = Text("⏳ Waiting in queue", style="yellow")
 
+            # Extract device information
+            device_name = result.device_name or "Unknown"
+            soc = ""
+            ram = ""
+            year = ""
+            
+            if result.device:
+                soc = result.device.Soc
+                ram = f"{result.device.Ram}GB"
+                year = str(result.device.Year)
+
             table.add_row(
                 result.job_id[:12],
-                result.device_name or "Unknown",
+                device_name,
+                soc,
+                ram,
+                year,
                 status_text,
                 elapsed,
                 details,

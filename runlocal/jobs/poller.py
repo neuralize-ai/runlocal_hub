@@ -242,6 +242,7 @@ class JobPoller:
             status=benchmark.Status,
             device_name=device_name
             or (benchmark.DeviceInfo.Name if benchmark.DeviceInfo else None),
+            device=benchmark.DeviceInfo,
             data=result_data,
             error=error,
             elapsed_time=elapsed_time,
