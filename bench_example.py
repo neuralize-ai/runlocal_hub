@@ -4,7 +4,7 @@ import numpy as np
 
 from runlocal.client import RunLocalClient
 from runlocal.devices import DeviceFilters
-from runlocal import display_benchmark_results, display_failed_benchmarks
+from runlocal import display_benchmark_results
 
 
 def main():
@@ -31,9 +31,6 @@ def main():
 
         # Display results using the new helper function
         display_benchmark_results(results)
-
-        # Display any failures
-        display_failed_benchmarks(results)
 
         # Show output tensor file paths if available
         if results[0].outputs:
