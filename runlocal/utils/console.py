@@ -128,26 +128,6 @@ class JobStatusDisplay:
         if self._live and self._live.is_started:
             self._live.stop()
 
-    def print_summary(self, job_results: List[JobResult], total_time: float):
-        """Print a final summary of job results."""
-        successful = sum(1 for r in job_results if r.status == BenchmarkStatus.Complete)
-        failed = sum(1 for r in job_results if r.status == BenchmarkStatus.Failed)
-
-        summary_text = "[bold]Summary:[/bold]\n"
-        summary_text += f"✓ Successful: [green]{successful}[/green]\n"
-        summary_text += f"✗ Failed: [red]{failed}[/red]\n"
-        summary_text += f"⏱ Total time: {int(total_time)}s"
-
-        panel = Panel(
-            summary_text,
-            title="[bold bright_cyan]🎯 Job Completion[/bold bright_cyan]",
-            border_style="blue",
-            expand=False,
-        )
-
-        self.console.print(panel)
-        print("")
-
     def print_error(self, message: str):
         """Print an error message."""
         self.console.print(f"[red]✗ Error:[/red] {message}")

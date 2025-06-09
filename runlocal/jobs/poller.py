@@ -144,10 +144,6 @@ class JobPoller:
             # Stop the live display
             display.stop_display()
 
-            # Print final summary
-            total_time = time.time() - start_time
-            display.print_summary(results, total_time)
-
         # Check for timeout - but still return partial results
         if len(completed_ids) < len(job_ids):
             incomplete_count = len(job_ids) - len(completed_ids)
