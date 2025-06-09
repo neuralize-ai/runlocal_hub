@@ -8,7 +8,7 @@ from runlocal import DeviceFilters, RunLocalClient
 def main():
     client = RunLocalClient()
 
-    model_path = "resnet-50.mlpackage"
+    model_path = "model.mlpackage"
     image = np.zeros([1, 3, 224, 224]).astype(np.float32)
     inputs = {"image": image}
 
