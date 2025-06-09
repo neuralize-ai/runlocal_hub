@@ -31,7 +31,17 @@
 ## 🛠 Installation
 
 ```bash
-pip install runlocal_hub
+pip install runlocal-hub
+```
+
+### Development Installation
+
+For development or to install from source:
+
+```bash
+git clone https://github.com/neuralize-ai/runlocal_hub.git
+cd runlocal_hub
+pip install -e .
 ```
 
 ## 🔑 Authentication
