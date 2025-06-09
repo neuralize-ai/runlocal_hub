@@ -1,144 +1,140 @@
-# RunLocal Python Client
+<h1 align="center">
+    <a href="https://runlocal.ai">
+        <picture>
+            <source media="(prefers-color-scheme: dark)" srcset="./assets/logo_dark_mode.svg">
+            <source media="(prefers-color-scheme: light)" srcset="./assets/logo_light_mode.svg">
+            <img alt="runlocal_hub Logo" src="./assets/logo_dark_mode.svg.svg" height="42" style="max-width: 100%;">
+        </picture>
+    </a>
+</h1>
 
-A Python client library for benchmarking and running machine learning models on real devices through the [RunLocal](https://edgemeter.runlocal.ai) API.
+<p align="center">
+    Test your ML models on real devices - benchmark performance, validate outputs, and ensure cross-platform compatibility before deployment.
+</p>
 
-## What is RunLocal?
+<br/>
 
-RunLocal provides cloud access to physical devices for testing and benchmarking ML models across platforms. This client library enables you to:
+<div align="center">
+  <img src="./assets/benchmark.gif" alt="RunLocal Benchmark Demo" width="800">
+</div>
 
-- **Benchmark ML models** on real hardware to measure performance metrics
-- **Run inference** on actual devices to validate model outputs and accuracy
-- **Test across platforms** - MacBooks, iPhones, iPads, Android devices, and Windows machines
-- **Support multiple formats** - CoreML, ONNX, OpenVINO, and TensorFlow Lite models
-- **Compare compute units** - test performance on CPU, GPU, and Neural Engine (where available)
-- **Avoid hardware limitations** - no need to own every device you want to test on
+## 🎯 Key Benefits
 
-Perfect for ML engineers who need to understand how their models perform across diverse hardware ecosystems before deployment.
+- **⚡ Real Hardware Testing** - No simulators or emulators. Test on actual devices with real performance characteristics
+- **🌍 Cross-Platform Coverage** - Access MacBooks, iPhones, iPads, Android, and Windows devices from a single API
+- **💰 Cost-Effective** - Avoid purchasing multiple devices for testing. Pay only for what you use
+- **🔧 Multiple ML Formats** - Support for CoreML, ONNX, OpenVINO, TensorFlow Lite, and GGUF models
+- **📊 Detailed Metrics** - Get inference time, memory usage, and per-layer performance data
+- **🚦 CI/CD Ready** - Integrate performance testing into your deployment pipeline
+- **🎛️ Flexible Device Selection** - Filter by device name, SoC, RAM, year, and compute units
 
-## Dependencies
+## 🛠 Installation
 
 ```bash
-pip install -r requirements.txt
+pip install runlocal_hub
 ```
 
-## Installation
+## 🔑 Authentication
 
-```sh
-pip install .
-```
-
-## Authentication
-
-You'll need an API key to use the RunLocal API. You can generate one on the RunLocal web interface:
+Get your API key from the [RunLocal dashboard](https://edgemeter.runlocal.ai):
 
 1. Log in to [RunLocal](https://edgemeter.runlocal.ai)
-2. Go to your user settings (avatar dropdown)
-3. Navigate to the "API Keys" section
+2. Click your avatar → User Settings
+3. Navigate to "API Keys"
 4. Click "Create New API Key"
-5. Save your API key in a secure location
-
-## Usage
+5. Save your key securely
 
 ```bash
 export RUNLOCAL_API_KEY=<your_api_key>
 ```
 
-### Basic Examples
+## 🕹 Usage Guide
 
-See the following example files for different usage patterns:
+### Simple Benchmark
 
-- `bench_example.py` - Simple benchmark example
-- `predict_example.py` - Simple prediction example
+```python
+from runlocal import RunLocalClient
+
+client = RunLocalClient()
+
+# Benchmark on any available device
+result = client.benchmark("model.mlpackage")
+print(f"Inference time: {result.mean_inference_time}ms")
+```
 
 ### Device Filtering
 
-The API uses `DeviceFilters` for intuitive device selection:
+Target specific devices with intuitive filters:
 
 ```python
 from runlocal import DeviceFilters, RunLocalClient
 
 client = RunLocalClient()
 
-# Filter by device characteristics
-device_filters = DeviceFilters(
-    device_name="MacBook",     # Device name pattern
-    soc="Apple M3",            # SoC type
-    ram_min=16,                # Minimum RAM (GB)
-    ram_max=32,                # Maximum RAM (GB)
-    year_min=2022              # Minimum device year
-    compute_units=[            # Compute units to run
-        "CPU_AND_GPU",
-        "CPU_AND_NE"
-    ]
+# High-end MacBooks with M-series chips
+mac_filters = DeviceFilters(
+    device_name="MacBook",
+    soc="Apple M",        # Matches M1, M2, M3, etc.
+    ram_min=16,           # At least 16GB RAM
+    year_min=2021         # Recent models only
 )
 
-# Run benchmark with filters
-result = client.benchmark(
-    model_path="model.mlpackage",
-    device_filters=device_filters,
-    timeout=300
+# Latest iPhones with Neural Engine
+iphone_filters = DeviceFilters(
+    device_name="iPhone",
+    year_min=2022,
+    compute_units=["CPU_AND_NE"]
+)
+
+# Run benchmarks
+results = client.benchmark(
+    "model.mlpackage",
+    device_filters=[mac_filters, iphone_filters],
+    count=None  # Use all matching devices
 )
 ```
 
-### Multi-Device Operations
+### 🧮 Running Predictions
 
-Run operations on multiple devices simultaneously:
-
-```python
-# Use 2 devices
-results = client.benchmark(
-    model_path="model.mlpackage",
-    count=2
-)
-
-# Use all available devices matching criteria
-results = client.benchmark(
-    model_path="model.mlpackage",
-    device_filters=DeviceFilters(device_name="MacBook"),
-    count=None  # None means use all matching devices
-)
-
-results = client.benchmark(
-    model_path="model.onnx",
-    device_filters=[
-        # M1 or M2 Macs
-        DeviceFilters(os="macOS", soc="M1"),
-        DeviceFilters(os="macOS", soc="M2"),
-
-        # High-end iPhones (6GB+ RAM)
-        DeviceFilters(device_name="iPhone", ram_min=6),
-
-        # Windows machines with 16GB+ RAM
-        DeviceFilters(os="Windows", ram_min=16),
-    ],
-    count=None  # None means use all matching devices
-)
-
-# Default behavior (single device)
-result = client.benchmark(model_path="model.mlpackage")  # count=1 by default
-```
-
-### Prediction with Inputs
-
-Run model predictions with custom inputs:
+Test your model with real inputs:
 
 ```python
 import numpy as np
 
-# Prepare inputs
-image = np.zeros([1, 3, 224, 224]).astype(np.float32)
+# Prepare input
+image = np.random.rand(1, 3, 224, 224).astype(np.float32)
 inputs = {"image": image}
 
-# Run prediction
+# Run prediction on iPhone
 outputs = client.predict(
     inputs=inputs,
     model_path="model.mlpackage",
-    device_filters=DeviceFilters(device_name="iPhone"),
+    device_filters=DeviceFilters(device_name="iPhone 15", compute_units=["CPU_AND_NE"])
 )
 
-# Process outputs by compute unit
-for compute_unit, tensors in outputs.items():
-    print(f"Compute unit '{compute_unit}':")
-    for name, tensor in tensors.items():
-        print(f"  {name}: shape={tensor.shape}, dtype={tensor.dtype}")
+tensors = outputs["CPU_AND_NE"]
+for name, tensor in tensors.items():
+    print(f"  {name}: {tensor.shape} ({tensor.dtype})")
+    print(f"  First values: {tensor.flatten()[:5]}")
 ```
+
+## 📚 Examples
+
+Check out the example scripts:
+
+- [`bench_example.py`](./bench_example.py) - Simple benchmarking example
+- [`predict_example.py`](./predict_example.py) - Prediction with custom inputs, serialised outputs
+
+## 💠 Supported Formats
+
+| Format          | Extension                   | Platforms       |
+| --------------- | --------------------------- | --------------- |
+| CoreML          | `.mlpackage`/`.mlmodel`     | macOS, iOS      |
+| ONNX            | `.onnx`                     | Windows, MacOS  |
+| OpenVINO        | directory (`.xml` + `.bin`) | Windows (Intel) |
+| TensorFlow Lite | `.tflite`                   | Android         |
+| GGUF            | `.gguf`                     | All platforma   |
+
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE.txt](LICENSE.txt) file for details.
