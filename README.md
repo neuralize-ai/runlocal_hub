@@ -53,7 +53,7 @@ export RUNLOCAL_API_KEY=<your_api_key>
 ### Simple Benchmark
 
 ```python
-from runlocal import RunLocalClient
+from runlocal_hub import RunLocalClient
 
 client = RunLocalClient()
 
@@ -67,7 +67,7 @@ print(f"Inference time: {result.mean_inference_time}ms")
 Target specific devices with intuitive filters:
 
 ```python
-from runlocal import DeviceFilters, RunLocalClient
+from runlocal_hub import DeviceFilters, RunLocalClient
 
 client = RunLocalClient()
 
