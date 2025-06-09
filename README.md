@@ -35,7 +35,7 @@
 ## 🔍 Evaluate Results
 
 All benchmarks performed through the python client can be evaluated on the web platform by logging into your account.
-Check out our [public demo models](https://edgemeter.runlocal.ai/public/pipelines) for comprehensive benchmark evaluation across different devices and model formats.
+Check out our [public demo](https://edgemeter.runlocal.ai/public/pipelines) for comprehensive benchmark evaluation across different devices and model formats.
 
 ## 🛠 Installation
 
