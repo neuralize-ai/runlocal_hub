@@ -1,7 +1,51 @@
+# Python
 __pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# PyPI
+.pypirc
+
+# Testing
+.tox/
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Local env
+venv/
+env/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
 /models
-/build
-/runlocal.egg-info
 outputs
 model.mlpackage
-*.egg-info/
+*.torchscript
+*.tflite
+*.mlpackage
+*.onnx
+*.xml
+*.bin
