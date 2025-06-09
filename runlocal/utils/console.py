@@ -45,22 +45,19 @@ class JobStatusDisplay:
         elapsed_display = f"⏱ Elapsed: {elapsed_time}s"
 
         table = Table(
-            title=f"⚡ {job_type.value.title()} Jobs Status - {elapsed_display}",
-            title_style="bold bright_cyan",
+            title=f"[yellow]⚡[/yellow] {job_type.value.title()} Jobs Status - {elapsed_display}",
+            title_style="bold",
             show_header=True,
-            header_style="bold bright_white on blue",
-            show_lines=True,
-            expand=False,
+            header_style="bold magenta",
+            expand=True,
         )
 
         # Add columns
-        table.add_column("Job ID", style="dim", width=12)
-        table.add_column("Device", min_width=25)
-        table.add_column("SoC", min_width=12)
-        table.add_column("RAM", min_width=8)
-        table.add_column("Year", min_width=6)
-        table.add_column("Status", justify="center", min_width=12)
-        table.add_column("Details", min_width=30)
+        table.add_column("Device")
+        table.add_column("SoC", style="cyan")
+        table.add_column("RAM", style="dim", justify="right")
+        table.add_column("Status", justify="center")
+        table.add_column("Details")
 
         # Add rows
         for result in job_results:
@@ -88,19 +85,15 @@ class JobStatusDisplay:
             device_name = result.device_name or "Unknown"
             soc = ""
             ram = ""
-            year = ""
 
             if result.device:
                 soc = result.device.Soc
                 ram = f"{result.device.Ram}GB"
-                year = str(result.device.Year)
 
             table.add_row(
-                result.job_id[:12],
                 device_name,
                 soc,
                 ram,
-                year,
                 status_text,
                 details,
             )
@@ -127,6 +120,8 @@ class JobStatusDisplay:
         """Stop the live display."""
         if self._live and self._live.is_started:
             self._live.stop()
+
+        print("")
 
     def print_error(self, message: str):
         """Print an error message."""

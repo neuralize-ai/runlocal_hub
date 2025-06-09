@@ -312,17 +312,19 @@ class DeviceSelector:
         """
         console = Console()
 
-        console.print(
-            f"[bold green]✓[/bold green] Selected [bold]{len(devices)}[/bold] device(s):"
+        table = Table(
+            title=f"Selected [cyan]{len(devices)}[/cyan] device(s)",
+            title_style="bold",
+            show_header=True,
+            header_style="bold magenta",
+            expand=True,
         )
-
-        table = Table(show_header=True, header_style="bold magenta")
-        table.add_column("Device", style="bold")
+        table.add_column("Device")
         table.add_column("Year", justify="center")
         table.add_column("SoC", style="cyan")
-        table.add_column("RAM", justify="center")
+        table.add_column("RAM", style="dim", justify="right")
         table.add_column("OS", style="dim")
-        table.add_column("Compute Units")
+        table.add_column("Compute Units", style="green")
 
         for device in devices:
             table.add_row(

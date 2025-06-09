@@ -63,16 +63,17 @@ def _display_grouped_results(
     # Create single table for all results
     table = Table(
         title="📊 Benchmark Results",
-        title_style="bold bright_cyan",
+        title_style="bold",
         show_header=True,
-        header_style="bold bright_white on blue",
+        header_style="bold magenta",
         show_lines=True,
+        expand=True,
     )
 
     # Add basic columns
-    table.add_column("Device", style="cyan", no_wrap=True)
+    table.add_column("Device")
     table.add_column("SoC", style="cyan")
-    table.add_column("RAM", style="cyan")
+    table.add_column("RAM", style="dim", justify="right")
     table.add_column("Compute Unit", style="green")
 
     # Add time columns based on preferences
