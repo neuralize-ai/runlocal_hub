@@ -292,6 +292,7 @@ class RunLocalClient:
         show_progress: bool = True,
         device_count: Optional[int] = 1,
         output_dir: Optional[Union[str, Path]] = None,
+        skip_output_download: bool = False,
     ) -> Union[BenchmarkResult, List[BenchmarkResult]]:
         """
         Benchmark a model with clean, user-friendly API.
@@ -307,11 +308,12 @@ class RunLocalClient:
             show_progress: Whether to show upload progress bar
             device_count: Number of devices to benchmark on (None = all, 1 = single result, >1 = list)
             output_dir: Directory to save output tensors (defaults to ./outputs/)
+            skip_output_download: If True, skip downloading output tensors even if inputs are provided
 
         Returns:
             BenchmarkResult object(s) containing device info and performance data
             (single BenchmarkResult if device_count=1, list of BenchmarkResult otherwise)
-            Output tensors are saved as file paths
+            Output tensors are saved as file paths (unless skip_output_download=True)
 
         Raises:
             ValueError: If neither model_path nor model_id is provided
@@ -365,6 +367,7 @@ class RunLocalClient:
             timeout=timeout,
             poll_interval=poll_interval,
             output_dir=output_dir,
+            skip_output_download=skip_output_download,
         )
 
     def predict(
@@ -460,6 +463,7 @@ class RunLocalClient:
         timeout: int = 600,
         poll_interval: int = 10,
         output_dir: Optional[Union[str, Path]] = None,
+        skip_output_download: bool = False,
     ) -> Union[BenchmarkResult, List[BenchmarkResult]]:
         """
         Internal method to run benchmarks using refactored components.
@@ -535,9 +539,9 @@ class RunLocalClient:
                         BenchmarkDataFloat.from_benchmark_data(original_bd)
                     )
 
-                # Download output tensors if inputs were provided
+                # Download output tensors if inputs were provided and skip_output_download is False
                 output_tensors = None
-                if inputs is not None:
+                if inputs is not None and not skip_output_download:
                     output_tensors = {}
                     for bd in result.data["BenchmarkData"]:
                         if bd.get("Success") and bd.get("OutputTensorsId"):
