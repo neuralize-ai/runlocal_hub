@@ -4,3 +4,4 @@ __pycache__/
 /runlocal.egg-info
 outputs
 model.mlpackage
+*.egg-info/
