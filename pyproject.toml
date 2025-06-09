@@ -5,37 +5,58 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "runlocal-hub"
 version = "0.1.0"
-description = "Python client library for the RunLocal API"
+description = "Python client for benchmarking and validating ML models on real devices via RunLocal API"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
 authors = [
     {name = "RunLocal", email = "ciaran@runlocal.ai"}
 ]
+maintainers = [
+    {name = "Ciaran O'Rourke", email = "ciaran@runlocal.ai"}
+]
+keywords = [
+    "machine-learning",
+    "models",
+    "benchmarking",
+    "coreml",
+    "onnx",
+    "tflite",
+    "openvino",
+    "ml-ops",
+    "device-testing",
+    "model-optimization",
+    "inference",
+    "neural-networks"
+]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-    "pydantic",
-    "requests",
-    "rich",
-    "numpy",
-    "tqdm",
+    "numpy>=1.19.0",
+    "pydantic>=2.0.0,<3.0.0",
+    "requests>=2.25.0,<3.0.0",
+    "tqdm>=4.50.0",
+    "rich>=10.0.0",
 ]
 
 [project.urls]
 Homepage = "https://runlocal.ai"
-Documentation = "https://github.com/neuralize-ai/runlocal-api"
-Repository = "https://github.com/neuralize-ai/runlocal-api"
+Repository = "https://github.com/neuralize-ai/runlocal_hub"
+Issues = "https://github.com/neuralize-ai/runlocal_hub/issues"
+Changelog = "https://github.com/neuralize-ai/runlocal_hub/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["src"]
