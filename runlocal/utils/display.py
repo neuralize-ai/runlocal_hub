@@ -12,7 +12,7 @@ from ..models.benchmark_result import BenchmarkResult
 
 def display_benchmark_results(
     results: Union[BenchmarkResult, List[BenchmarkResult]],
-    show_average: bool = False,
+    show_mean: bool = False,
     show_inference_array: bool = False,
     show_load_array: bool = False,
     show_ram_usage: bool = False,
@@ -40,7 +40,7 @@ def display_benchmark_results(
 
     _display_grouped_results(
         results,
-        show_average,
+        show_mean,
         show_inference_array,
         show_load_array,
         show_ram_usage,
@@ -53,7 +53,7 @@ def display_benchmark_results(
 
 def _display_grouped_results(
     results: List[BenchmarkResult],
-    show_average: bool,
+    show_mean: bool,
     show_inference_array: bool,
     show_load_array: bool,
     show_ram_usage: bool,
@@ -75,9 +75,9 @@ def _display_grouped_results(
     table.add_column("Compute Unit", style="green")
 
     # Add time columns based on preferences
-    if show_average:
-        table.add_column("Avg Inference (ms)", justify="right", style="yellow")
-        table.add_column("Avg Load (ms)", justify="right", style="yellow")
+    if show_mean:
+        table.add_column("Mean Inference (ms)", justify="right", style="yellow")
+        table.add_column("Mean Load (ms)", justify="right", style="yellow")
     else:
         table.add_column("Median Inference (ms)", justify="right", style="yellow")
         table.add_column("Median Load (ms)", justify="right", style="yellow")
@@ -116,7 +116,7 @@ def _display_grouped_results(
             row.append(benchmark_data.ComputeUnit)
 
             # Time metrics
-            if show_average:
+            if show_mean:
                 inference_time = (
                     f"{benchmark_data.InferenceMsAverage:.2f}"
                     if benchmark_data.InferenceMsAverage
