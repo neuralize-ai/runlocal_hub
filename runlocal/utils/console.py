@@ -45,9 +45,10 @@ class JobStatusDisplay:
         elapsed_display = f"⏱ Elapsed: {elapsed_time}s"
 
         table = Table(
-            title=f"{job_type.value.title()} Jobs Status - {elapsed_display}",
+            title=f"⚡ {job_type.value.title()} Jobs Status - {elapsed_display}",
+            title_style="bold bright_cyan",
             show_header=True,
-            header_style="bold magenta",
+            header_style="bold bright_white on blue",
             show_lines=True,
             expand=False,
         )
@@ -138,7 +139,10 @@ class JobStatusDisplay:
         summary_text += f"⏱ Total time: {int(total_time)}s"
 
         panel = Panel(
-            summary_text, title="Job Completion", border_style="blue", expand=False
+            summary_text,
+            title="[bold bright_cyan]🎯 Job Completion[/bold bright_cyan]",
+            border_style="blue",
+            expand=False,
         )
 
         self.console.print(panel)

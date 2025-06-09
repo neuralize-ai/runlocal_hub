@@ -62,7 +62,8 @@ def _display_grouped_results(
     """Display results grouped by device in a single table."""
     # Create single table for all results
     table = Table(
-        title="Benchmark Results",
+        title="📊 Benchmark Results",
+        title_style="bold bright_cyan",
         show_header=True,
         header_style="bold bright_white on blue",
         show_lines=True,
@@ -205,7 +206,7 @@ def display_failed_benchmarks(
     if not failed_results:
         return
 
-    console.print("\n[red bold]Failed Benchmarks:[/red bold]")
+    console.print("\n[bold red]❌ Failed Benchmarks[/bold red]")
 
     for result, benchmark_data in failed_results:
         console.print(
