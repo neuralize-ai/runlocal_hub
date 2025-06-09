@@ -275,9 +275,9 @@ class RunLocalClient:
             raise UploadError("No upload ID received from server")
 
         if already_exists:
-            print(f"Model already exists with upload_id: {upload_id}")
+            print(f"Model already exists with upload_id: {upload_id}\n")
         else:
-            print(f"Model uploaded successfully with upload_id: {upload_id}")
+            print(f"Model uploaded successfully with upload_id: {upload_id}\n")
 
         return upload_id
 
