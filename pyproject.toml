@@ -38,6 +38,6 @@ Documentation = "https://github.com/neuralize-ai/runlocal-api"
 Repository = "https://github.com/neuralize-ai/runlocal-api"
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["runlocal*"]
+where = ["src"]
+include = ["runlocal_hub*"]
 exclude = ["tests*"]
