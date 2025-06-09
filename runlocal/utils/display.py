@@ -17,7 +17,7 @@ def display_benchmark_results(
     show_load_array: bool = False,
     show_ram_usage: bool = False,
     show_failed_benchmarks: bool = False,
-) -> None:
+):
     """
     Display benchmark results in a formatted table using rich.
 
@@ -27,6 +27,7 @@ def display_benchmark_results(
         show_inference_array: Show full inference time arrays
         show_load_array: Show full load time arrays
         show_ram_usage: Show RAM usage metrics
+        show_failed_benchmarks: Show details about failed benchmarks
     """
     console = Console()
 
@@ -37,9 +38,34 @@ def display_benchmark_results(
         console.print("[yellow]No benchmark results to display[/yellow]")
         return
 
-    # Create table
+    _display_grouped_results(
+        results,
+        show_average,
+        show_inference_array,
+        show_load_array,
+        show_ram_usage,
+        console,
+    )
+
+    if show_failed_benchmarks:
+        display_failed_benchmarks(results)
+
+
+def _display_grouped_results(
+    results: List[BenchmarkResult],
+    show_average: bool,
+    show_inference_array: bool,
+    show_load_array: bool,
+    show_ram_usage: bool,
+    console: Console,
+):
+    """Display results grouped by device in a single table."""
+    # Create single table for all results
     table = Table(
-        title="Benchmark Results", show_header=True, header_style="bold magenta"
+        title="Benchmark Results",
+        show_header=True,
+        header_style="bold bright_white on blue",
+        show_lines=True,
     )
 
     # Add basic columns
@@ -65,20 +91,28 @@ def display_benchmark_results(
         table.add_column("Peak Load RAM (MB)", justify="right", style="blue")
         table.add_column("Peak Inference RAM (MB)", justify="right", style="blue")
 
-    # Add rows
+    # Process all results
     for result in results:
         device = result.device
+        successful_benchmarks = [
+            b
+            for b in result.benchmark_data
+            if b.Status != "Failed" and b.Success is not False
+        ]
 
-        for benchmark_data in result.benchmark_data:
-            if benchmark_data.Status == "Failed" or benchmark_data.Success is False:
-                continue
+        if not successful_benchmarks:
+            continue
 
+        # Add rows for each compute unit
+        for i, benchmark_data in enumerate(successful_benchmarks):
             row = []
 
-            # Basic device info
-            row.append(device.Name)
-            row.append(device.Soc)
-            row.append(f"{device.Ram} GB")
+            # Show device info only on first row for this device
+            if i == 0:
+                row.extend([device.Name, device.Soc, f"{device.Ram} GB"])
+            else:
+                row.extend(["", "", ""])
+
             row.append(benchmark_data.ComputeUnit)
 
             # Time metrics
@@ -105,8 +139,7 @@ def display_benchmark_results(
                     else "N/A"
                 )
 
-            row.append(inference_time)
-            row.append(load_time)
+            row.extend([inference_time, load_time])
 
             # Optional columns
             if show_inference_array:
@@ -142,20 +175,16 @@ def display_benchmark_results(
                     if benchmark_data.PeakInferenceRamUsage
                     else "N/A"
                 )
-                row.append(load_ram)
-                row.append(inference_ram)
+                row.extend([load_ram, inference_ram])
 
             table.add_row(*row)
 
     console.print(table)
 
-    if show_failed_benchmarks:
-        display_failed_benchmarks(results)
-
 
 def display_failed_benchmarks(
     results: Union[BenchmarkResult, List[BenchmarkResult]],
-) -> None:
+):
     """
     Display details about failed benchmark runs.
 
