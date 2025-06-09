@@ -62,3 +62,6 @@ Changelog = "https://github.com/neuralize-ai/runlocal_hub/blob/main/CHANGELOG.md
 where = ["src"]
 include = ["runlocal_hub*"]
 exclude = ["tests*"]
+
+[tool.setuptools.package-dir]
+"" = "src"
