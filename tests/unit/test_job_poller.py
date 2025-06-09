@@ -426,4 +426,3 @@ class TestJobResult:
         assert not result.is_complete
         assert not result.is_successful
         assert not result.is_failed
-
