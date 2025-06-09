@@ -9,7 +9,7 @@
 </h1>
 
 <p align="center">
-    Test your ML models on real devices - benchmark performance, validate outputs, and ensure cross-platform compatibility before deployment.
+    Python client for benchmarking and validating ML models on real devices via RunLocal API.
 </p>
 
 <p align="center">
@@ -24,15 +24,18 @@
   <img src="./assets/benchmark.gif" alt="RunLocal Benchmark Demo" width="800">
 </div>
 
-## 🎯 Key Benefits
+## 🎯 Key Features
 
-- **⚡ Real Hardware Testing** - No simulators or emulators. Test on actual devices with real performance characteristics
+- **⚡ Real Hardware Testing** - No simulators or emulators. Test on real devices maintained in our devices lab
 - **🌍 Cross-Platform Coverage** - Access MacBooks, iPhones, iPads, Android, and Windows devices from a single API
-- **💰 Cost-Effective** - Avoid purchasing multiple devices for testing. Pay only for what you use
-- **🔧 Multiple ML Formats** - Support for CoreML, ONNX, OpenVINO, TensorFlow Lite, and GGUF models
-- **📊 Detailed Metrics** - Get inference time, memory usage, and per-layer performance data
-- **🚦 CI/CD Ready** - Integrate performance testing into your deployment pipeline
-- **🎛️ Flexible Device Selection** - Filter by device name, SoC, RAM, year, and compute units
+- **🔧 Multiple ML Formats** - Support for CoreML, ONNX, OpenVINO, TensorFlow Lite, and GGUF models. More frameworks coming soon.
+- **📊 Detailed Metrics** - Measure inference time, memory usage, and per-layer performance data
+- **🚦 CI/CD Ready** - Integrate performance and accuracy testing into your deployment pipeline
+
+## 🔍 Evaluate Results
+
+All benchmarks performed through the python client can be evaluated on the web platform by logging into your account.
+Check out our [public demo models](https://edgemeter.runlocal.ai/public/pipelines) for comprehensive benchmark evaluation across different devices and model formats.
 
 ## 🛠 Installation
 
@@ -150,6 +153,8 @@ Check out the example scripts:
 | OpenVINO        | directory (`.xml` + `.bin`) | Windows (Intel) |
 | TensorFlow Lite | `.tflite`                   | Android         |
 | GGUF            | `.gguf`                     | All platforma   |
+
+More frameworks coming soon.
 
 ## 📜 License
 
