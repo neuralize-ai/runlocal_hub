@@ -560,7 +560,7 @@ class RunLocalClient:
                     benchmark_data=benchmark_data,
                     job_id=result.job_id,
                     status=result.data.get("Status", "Unknown"),
-                    model_id=result.data.get("UploadId", ""),
+                    modelid=result.data.get("UploadId", ""),
                     outputs=output_tensors,
                 )
                 processed_results.append(benchmark_result)
@@ -689,7 +689,7 @@ class RunLocalClient:
                         outputs=compute_unit_outputs,
                         job_id=result.job_id,
                         status=result.data.get("Status", "Unknown"),
-                        model_id=result.data.get("UploadId", ""),
+                        modelid=result.data.get("UploadId", ""),
                     )
                     processed_results.append(prediction_result)
                 else:
