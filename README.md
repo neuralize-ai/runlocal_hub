@@ -12,6 +12,12 @@
     Test your ML models on real devices - benchmark performance, validate outputs, and ensure cross-platform compatibility before deployment.
 </p>
 
+<p align="center">
+    <a href="https://pypi.org/project/runlocal-hub/"><img src="https://badge.fury.io/py/runlocal-hub.svg" alt="PyPI version"></a>
+    <a href="https://pypi.org/project/runlocal-hub/"><img src="https://img.shields.io/pypi/pyversions/runlocal-hub.svg" alt="Python Versions"></a>
+    <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+</p>
+
 <br/>
 
 <div align="center">
