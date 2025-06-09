@@ -21,6 +21,7 @@ class HTTPClient:
             debug: Enable debug logging
         """
         self.base_url = base_url
+        self.api_key = api_key
         self.headers = {"X-API-KEY": api_key}
         self.debug = debug
 
