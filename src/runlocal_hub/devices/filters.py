@@ -35,13 +35,6 @@ class DeviceFilters:
             if self.ram_min > self.ram_max:
                 raise ValueError("ram_min cannot be greater than ram_max")
 
-        if self.year_min is not None and self.year_min < 1900:
-            raise ValueError("year_min seems unrealistic")
-
-        if self.year_max is not None and self.year_max < 1900:
-            raise ValueError("year_max seems unrealistic")
-
         if self.year_min is not None and self.year_max is not None:
             if self.year_min > self.year_max:
                 raise ValueError("year_min cannot be greater than year_max")
-
