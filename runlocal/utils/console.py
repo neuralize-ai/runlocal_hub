@@ -42,10 +42,10 @@ class JobStatusDisplay:
     ) -> Table:
         """Create a rich table showing job statuses."""
         # Format elapsed time display
-        elapsed_display = f"⏱ Elapsed: {elapsed_time}s"
+        elapsed_display = f"  Elapsed: {elapsed_time}s"
 
         table = Table(
-            title=f"[yellow]⚡[/yellow] {job_type.value.title()} Jobs Status - {elapsed_display}",
+            title=f"{job_type.value.title()} Jobs Status - {elapsed_display}",
             title_style="bold",
             show_header=True,
             header_style="bold magenta",
@@ -79,7 +79,7 @@ class JobStatusDisplay:
             elif result.status == BenchmarkStatus.Running:
                 details = Text("⚡ Processing...", style="cyan")
             elif result.status == BenchmarkStatus.Pending:
-                details = Text("⏳ Waiting in queue", style="yellow")
+                details = Text("  Waiting in queue", style="yellow")
 
             # Extract device information
             device_name = result.device_name or "Unknown"

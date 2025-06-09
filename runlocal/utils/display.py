@@ -62,7 +62,7 @@ def _display_grouped_results(
     """Display results grouped by device in a single table."""
     # Create single table for all results
     table = Table(
-        title="📊 Benchmark Results",
+        title="[yellow]⚡[/yellow] Benchmark Results",
         title_style="bold",
         show_header=True,
         header_style="bold magenta",
