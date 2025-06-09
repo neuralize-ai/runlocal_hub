@@ -72,13 +72,13 @@ export RUNLOCAL_API_KEY=<your_api_key>
 ### Simple Benchmark
 
 ```python
-from runlocal_hub import RunLocalClient
+from runlocal_hub import RunLocalClient, display_benchmark_results
 
 client = RunLocalClient()
 
 # Benchmark on any available device
 result = client.benchmark("model.mlpackage")
-print(f"Inference time: {result.mean_inference_time}ms")
+display_benchmark_results(results)
 ```
 
 ### Device Filtering
