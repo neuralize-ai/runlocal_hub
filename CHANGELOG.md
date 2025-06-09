@@ -39,4 +39,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Uses requests for HTTP communication
 - Integrated with rich for enhanced console output
 - Streaming file uploads for efficient handling of large models
-
