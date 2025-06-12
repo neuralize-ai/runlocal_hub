@@ -483,9 +483,8 @@ class RunLocalClient:
         # Create device requests for all devices
         device_requests = []
         for device_usage in devices:
-            device_id = device_usage.device.to_device_id()
             device_request = {
-                "device_id": device_id,
+                "device_id": device_usage.native_device_id,
                 "compute_units": device_usage.compute_units,
             }
             device_requests.append(device_request)
@@ -620,9 +619,8 @@ class RunLocalClient:
         # Create device requests for all devices
         device_requests = []
         for device_usage in devices:
-            device_id = device_usage.device.to_device_id()
             device_request = {
-                "device_id": device_id,
+                "device_id": device_usage.native_device_id,
                 "compute_units": device_usage.compute_units,
             }
             device_requests.append(device_request)
