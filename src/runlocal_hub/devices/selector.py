@@ -55,6 +55,7 @@ class DeviceSelector:
                 DeviceUsage(
                     device=device_usage["device"],
                     compute_units=device_usage["compute_units"],
+                    native_device_id=device_usage["native_device_id"],
                 )
                 for device_usage in response
                 if device_usage.get("device")
@@ -68,6 +69,7 @@ class DeviceSelector:
             DeviceUsage(
                 device=device_usage["device"],
                 compute_units=[],
+                native_device_id=device_usage["native_device_id"],
             )
             for device_usage in response
             if device_usage.get("device")
@@ -157,9 +159,8 @@ class DeviceSelector:
 
                 # Add unique devices to result
                 for device_usage in matches:
-                    device_id = device_usage.device.to_device_id()
-                    if device_id not in seen_device_ids:
-                        seen_device_ids.add(device_id)
+                    if device_usage.native_device_id not in seen_device_ids:
+                        seen_device_ids.add(device_usage.native_device_id)
                         filtered_devices.append(device_usage)
 
             # Check if any devices matched
@@ -296,6 +297,7 @@ class DeviceSelector:
                         DeviceUsage(
                             device=device_usage.device,
                             compute_units=matching_compute_units,
+                            native_device_id=device_usage.native_device_id,
                         )
                     )
 
