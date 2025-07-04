@@ -35,7 +35,7 @@ class JobPoller:
         job_ids: List[str],
         job_type: JobType,
         devices: Optional[List[Device]] = None,
-        timeout: int = 600,
+        timeout: Optional[int] = 600,
         progress_callback: Optional[Callable[[JobResult], None]] = None,
     ) -> List[JobResult]:
         """
@@ -240,7 +240,7 @@ class JobPoller:
     def _should_continue(
         self,
         start_time: float,
-        timeout: int,
+        timeout: Optional[int],
         completed_ids: Set[str],
         job_ids: List[str],
     ) -> bool:
@@ -256,12 +256,12 @@ class JobPoller:
         Returns:
             True if should continue polling
         """
-        # Check timeout
-        if time.time() - start_time >= timeout:
-            return False
-
         # Check if all jobs complete
         if len(completed_ids) >= len(job_ids):
+            return False
+
+        # Check timeout
+        if timeout is not None and time.time() - start_time >= timeout:
             return False
 
         return True
