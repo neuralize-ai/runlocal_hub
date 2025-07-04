@@ -87,6 +87,7 @@ class JobStatusDisplay:
             ram = ""
 
             if result.device:
+                device_name = result.device.Name
                 soc = result.device.Soc
                 ram = f"{result.device.Ram}GB"
 

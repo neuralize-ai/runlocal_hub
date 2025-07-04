@@ -514,11 +514,11 @@ class RunLocalClient:
         self.job_poller.poll_interval = poll_interval
 
         # Poll for benchmark completion using our job poller
-        device_names = [device.device.Name for device in devices]
+        device_infos = [device.device for device in devices]
         results = self.job_poller.poll_jobs(
             job_ids=benchmark_ids,
             job_type=JobType.BENCHMARK,
-            device_names=device_names,
+            devices=device_infos,
             timeout=timeout,
         )
 
@@ -648,11 +648,11 @@ class RunLocalClient:
         self.job_poller.poll_interval = poll_interval
 
         # Poll for prediction completion using our job poller
-        device_names = [device.device.Name for device in devices]
+        device_infos = [device.device for device in devices]
         results = self.job_poller.poll_jobs(
             job_ids=benchmark_ids,
             job_type=JobType.PREDICTION,
-            device_names=device_names,
+            devices=device_infos,
             timeout=timeout,
         )
 

@@ -5,6 +5,8 @@ Job polling logic for async operations.
 import time
 from typing import Callable, List, Optional, Set
 
+from runlocal_hub.models.device import Device
+
 from ..http import HTTPClient
 from ..models import BenchmarkDbItem, BenchmarkStatus, JobResult, JobType
 from ..utils.console import JobStatusDisplay
@@ -32,7 +34,7 @@ class JobPoller:
         self,
         job_ids: List[str],
         job_type: JobType,
-        device_names: Optional[List[str]] = None,
+        devices: Optional[List[Device]] = None,
         timeout: int = 600,
         progress_callback: Optional[Callable[[JobResult], None]] = None,
     ) -> List[JobResult]:
@@ -67,10 +69,10 @@ class JobPoller:
 
         # Create device name mapping
         device_name_map = {}
-        if device_names:
+        if devices is not None:
             for i, job_id in enumerate(job_ids):
-                if i < len(device_names):
-                    device_name_map[job_id] = device_names[i]
+                if i < len(devices):
+                    device_name_map[job_id] = devices[i]
 
         # Initialize job results for display
         for job_id in job_ids:
