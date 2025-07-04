@@ -68,11 +68,11 @@ class JobPoller:
         all_job_results: List[JobResult] = []
 
         # Create device name mapping
-        device_name_map = {}
+        device_map = {}
         if devices is not None:
             for i, job_id in enumerate(job_ids):
                 if i < len(devices):
-                    device_name_map[job_id] = devices[i]
+                    device_map[job_id] = devices[i]
 
         # Initialize job results for display
         for job_id in job_ids:
@@ -80,7 +80,7 @@ class JobPoller:
                 JobResult(
                     job_id=job_id,
                     status=BenchmarkStatus.Pending,
-                    device_name=device_name_map.get(job_id),
+                    device=device_map.get(job_id),
                 )
             )
 
@@ -100,7 +100,7 @@ class JobPoller:
                     try:
                         result = self._check_job_status(
                             job_id=job_id,
-                            device_name=device_name_map.get(job_id),
+                            device=device_map.get(job_id),
                         )
 
                         # Update the job result in our tracking list
@@ -167,7 +167,7 @@ class JobPoller:
         self,
         job_id: str,
         job_type: JobType,
-        device_name: Optional[str] = None,
+        devices: Optional[List[Device]] = None,
         timeout: int = 600,
         progress_callback: Optional[Callable[[JobResult], None]] = None,
     ) -> Optional[JobResult]:
@@ -190,7 +190,7 @@ class JobPoller:
         results = self.poll_jobs(
             job_ids=[job_id],
             job_type=job_type,
-            device_names=[device_name] if device_name else None,
+            devices=devices,
             timeout=timeout,
             progress_callback=progress_callback,
         )
@@ -201,7 +201,7 @@ class JobPoller:
     def _check_job_status(
         self,
         job_id: str,
-        device_name: Optional[str] = None,
+        device: Optional[Device] = None,
     ) -> Optional[JobResult]:
         """
         Check the status of a single job.
@@ -230,9 +230,7 @@ class JobPoller:
         return JobResult(
             job_id=job_id,
             status=benchmark.Status,
-            device_name=device_name
-            or (benchmark.DeviceInfo.Name if benchmark.DeviceInfo else None),
-            device=benchmark.DeviceInfo,
+            device=device,
             data=result_data,
             error=error,
         )
