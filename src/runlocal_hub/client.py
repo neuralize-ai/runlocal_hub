@@ -527,8 +527,11 @@ class RunLocalClient:
         for result in results:
             if result.is_successful and result.data:
                 # Extract device info and benchmark data
-                device_info = result.data.get("DeviceInfo", {})
-                device = Device(**device_info)
+                if result.device is not None:
+                    device = result.device
+                else:
+                    device_info = result.data.get("DeviceInfo", {})
+                    device = Device(**device_info)
 
                 # Convert benchmark data to float format
                 benchmark_data = []
@@ -683,8 +686,11 @@ class RunLocalClient:
 
                 if compute_unit_outputs:
                     # Extract device info from the data
-                    device_info = result.data.get("DeviceInfo", {})
-                    device = Device(**device_info)
+                    if result.device is not None:
+                        device = result.device
+                    else:
+                        device_info = result.data.get("DeviceInfo", {})
+                        device = Device(**device_info)
 
                     prediction_result = PredictionResult(
                         device=device,
