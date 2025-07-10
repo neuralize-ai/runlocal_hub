@@ -12,6 +12,8 @@ from tqdm import tqdm
 
 import numpy as np
 
+from runlocal_hub.models.model import UploadDbItem
+
 from .devices import DeviceFilters, DeviceSelector
 from .exceptions import ConfigurationError, RunLocalError, UploadError, ValidationError
 from .http import HTTPClient
@@ -110,6 +112,25 @@ class RunLocalClient:
         """
         user_data = self.get_user_info()
         return user_data.get("UploadIds", [])
+
+    @handle_api_errors
+    def get_models(self) -> List[UploadDbItem]:
+        """
+        Get a list of model IDs for the authenticated user.
+
+        Returns:
+            List of model IDs
+
+        Raises:
+            AuthenticationError: If the API key is invalid
+        """
+        response = self.http_client.get("/uploads/user")
+        models: List[UploadDbItem] = []
+
+        for item in response:
+            models.append(UploadDbItem(**item))
+
+        return models
 
     def upload_model(
         self,
