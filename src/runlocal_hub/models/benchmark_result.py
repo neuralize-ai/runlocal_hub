@@ -9,7 +9,6 @@ class BenchmarkResult(BaseModel):
 
     device: Device
     benchmark_data: List[BenchmarkDataFloat]
-    job_id: str
     status: str
     modelid: str
     # Optional output tensor file paths
