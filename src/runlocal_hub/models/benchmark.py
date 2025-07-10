@@ -201,15 +201,7 @@ class BenchmarkTableSchema(BaseModel):
     Used to display the actual benchmark data per model
     """
 
-    BenchmarkId: Optional[str] = None
-    BenchmarkDataId: Optional[str] = None
-
-    CreatedUtc: str
     Status: BenchmarkStatus
-    UploadId: str
-
-    FileName: Optional[str] = None
-    FileSize: Optional[Decimal] = None
 
     DeviceInfo: Optional[Device] = None
     RuntimeFramework: Optional[Framework] = None
@@ -220,7 +212,7 @@ class BenchmarkTableSchema(BaseModel):
     LoadMsMedian: Optional[Decimal] = None
     LoadMsStdDev: Optional[Decimal] = None
     InferenceMsAverage: Optional[Decimal] = None
-    InferenceMsFirst: Optional[Decimal] = None  # extracted from InferenceMsArray
+    InferenceMsFirst: Optional[Decimal] = None
     LoadMsAverage: Optional[Decimal] = None
     LoadMsFirst: Optional[Decimal] = None
     PrefillTokens: Optional[int] = None
