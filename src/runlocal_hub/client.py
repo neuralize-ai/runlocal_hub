@@ -115,12 +115,29 @@ class RunLocalClient:
         return user_data.get("UploadIds", [])
 
     @handle_api_errors
-    def get_models(self) -> List[UploadDbItem]:
+    def get_model(self, model_id: str) -> UploadDbItem:
         """
-        Get a list of model IDs for the authenticated user.
+        Get a model from an ID
+
+        Args:
+            model_id: ID of the model to fetch
 
         Returns:
-            List of model IDs
+            Model info object
+
+        Raises:
+            AuthenticationError: If the API key is invalid
+        """
+        response = self.http_client.get(f"/uploads/model/coreml/{model_id}")
+        return UploadDbItem(**response)
+
+    @handle_api_errors
+    def get_models(self) -> List[UploadDbItem]:
+        """
+        Get all models user models.
+
+        Returns:
+            List of models
 
         Raises:
             AuthenticationError: If the API key is invalid
