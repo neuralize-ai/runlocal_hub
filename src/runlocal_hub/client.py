@@ -12,8 +12,13 @@ from tqdm import tqdm
 
 import numpy as np
 
-from runlocal_hub.models.benchmark import BenchmarkTableSchema
+from runlocal_hub.models.benchmark import (
+    BenchmarkDbItem,
+    BenchmarkStatus,
+    BenchmarkTableSchema,
+)
 from runlocal_hub.models.model import UploadDbItem
+from runlocal_hub.utils.json import convert_to_json_friendly
 
 from .devices import DeviceFilters, DeviceSelector
 from .exceptions import ConfigurationError, RunLocalError, UploadError, ValidationError
@@ -38,8 +43,8 @@ class RunLocalClient:
     Simplified Python client for the RunLocal API.
     """
 
-    BASE_URL = "https://neuralize-bench.com"
-    # BASE_URL = "http://127.0.0.1:8000"  # Local development
+    # BASE_URL = "https://neuralize-bench.com"
+    BASE_URL = "http://127.0.0.1:8000"  # Local development
     ENV_VAR_NAME = "RUNLOCAL_API_KEY"
 
     def __init__(
@@ -171,6 +176,53 @@ class RunLocalClient:
             rows.append(BenchmarkTableSchema(**item))
 
         return rows
+
+    @handle_api_errors
+    def get_model_benchmarks(self, model: str | UploadDbItem) -> List[BenchmarkResult]:
+        """
+        Get a benchmark table data for a model
+
+        Args:
+            model: model object or ID of the model to fetch benchmark results for
+
+        Returns:
+            List of Benchmark results for the model
+
+        Raises:
+            AuthenticationError: If the API key is invalid
+        """
+
+        model_id: str
+        if isinstance(model, str):
+            model_id = model
+        else:
+            model_id = model.UploadId
+
+        response = self.http_client.get(f"/benchmarks/model/{model_id}")
+        results: List[BenchmarkResult] = []
+        for item in response:
+            benchmark_item = BenchmarkDbItem(**item)
+            if benchmark_item.Status != BenchmarkStatus.Complete:
+                continue
+
+            result = convert_to_json_friendly(benchmark_item)
+            device = result.get("DeviceInfo", {})
+
+            # Convert benchmark data to float format
+            benchmark_data = []
+            for bd in result.get("BenchmarkData", []):
+                original_bd = BenchmarkData(**bd)
+                benchmark_data.append(
+                    BenchmarkDataFloat.from_benchmark_data(original_bd)
+                )
+            benchmark_result = BenchmarkResult(
+                device=device,
+                benchmark_data=benchmark_data,
+            )
+
+            results.append(benchmark_result)
+
+        return results
 
     def upload_model(
         self,
