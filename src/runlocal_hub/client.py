@@ -625,7 +625,6 @@ class RunLocalClient:
                 benchmark_result = BenchmarkResult(
                     device=device,
                     benchmark_data=benchmark_data,
-                    modelid=result.data.get("UploadId", ""),
                     outputs=output_tensors,
                 )
                 processed_results.append(benchmark_result)

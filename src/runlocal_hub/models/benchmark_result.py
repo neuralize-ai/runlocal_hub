@@ -9,7 +9,6 @@ class BenchmarkResult(BaseModel):
 
     device: Device
     benchmark_data: List[BenchmarkDataFloat]
-    modelid: str
     # Optional output tensor file paths
     outputs: Optional[Dict[str, Dict[str, str]]] = (
         None  # Dict[compute_unit, Dict[tensor_name, file_path]]
