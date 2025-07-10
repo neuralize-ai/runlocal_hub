@@ -98,7 +98,7 @@ class RunLocalClient:
         return self.http_client.get("/users")
 
     @handle_api_errors
-    def get_models(self) -> List[str]:
+    def get_models_ids(self) -> List[str]:
         """
         Get a list of model IDs for the authenticated user.
 
@@ -348,7 +348,7 @@ class RunLocalClient:
         if self.debug:
             print("Selecting devices...")
 
-        user_models = self.get_models()
+        user_models = self.get_models_ids()
         devices = self.device_selector.select_devices(
             model_id=model_id,
             filters=device_filters,
@@ -434,7 +434,7 @@ class RunLocalClient:
         if self.debug:
             print("Selecting devices...")
 
-        user_models = self.get_models()
+        user_models = self.get_models_ids()
         devices = self.device_selector.select_devices(
             model_id=model_id,
             filters=device_filters,
