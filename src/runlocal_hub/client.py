@@ -156,28 +156,6 @@ class RunLocalClient:
         return models
 
     @handle_api_errors
-    def get_benchmark_table_data(self, model_id: str) -> List[BenchmarkTableSchema]:
-        """
-        Get a benchmark table data for a model
-
-        Args:
-            model_id: ID of the model to fetch benchmark results for
-
-        Returns:
-            List of Benchmark table data rows
-
-        Raises:
-            AuthenticationError: If the API key is invalid
-        """
-        response = self.http_client.get(f"/coreml/benchmark/{model_id}")
-        rows: List[BenchmarkTableSchema] = []
-
-        for item in response:
-            rows.append(BenchmarkTableSchema(**item))
-
-        return rows
-
-    @handle_api_errors
     def get_model_benchmarks(self, model: str | UploadDbItem) -> List[BenchmarkResult]:
         """
         Get a benchmark table data for a model

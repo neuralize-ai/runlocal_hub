@@ -1,6 +1,6 @@
 from .console import JobStatusDisplay, StatusColors
 from .json import RunLocalJSONEncoder, convert_to_json_friendly
-from .display import display_benchmark_results, display_failed_benchmarks, display_benchmark_table
+from .display import display_benchmark_results, display_failed_benchmarks
 
 __all__ = [
     "RunLocalJSONEncoder",
@@ -9,6 +9,4 @@ __all__ = [
     "StatusColors",
     "display_benchmark_results",
     "display_failed_benchmarks",
-    "display_benchmark_table",
 ]
-

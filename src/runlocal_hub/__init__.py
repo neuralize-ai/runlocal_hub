@@ -20,7 +20,7 @@ from .exceptions import (
     NetworkError,
     ConfigurationError,
 )
-from .utils.display import display_benchmark_results, display_failed_benchmarks, display_benchmark_table
+from .utils.display import display_benchmark_results, display_failed_benchmarks
 
 __all__ = [
     "__version__",
@@ -47,5 +47,4 @@ __all__ = [
     "ConfigurationError",
     "display_benchmark_results",
     "display_failed_benchmarks",
-    "display_benchmark_table",
 ]
