@@ -11,6 +11,14 @@ from pydantic import BaseModel
 from .device import Device
 
 
+class Framework(str, Enum):
+    COREML = "coreml"
+    ONNXRUNTIME = "onnxruntime"
+    OPENVINO = "openvino"
+    TFLITE = "tflite"
+    LLAMACPP = "llamacpp"
+
+
 class BenchmarkStatus(str, Enum):
     """Status of a benchmark job."""
 
@@ -180,6 +188,7 @@ class BenchmarkDbItem(BaseModel):
     DeviceInfo: Optional[Device] = None
     Status: BenchmarkStatus
     BenchmarkData: List[BenchmarkData]
+    RuntimeFramework: Optional[Framework] = None
 
     def to_dict(self):
         """Convert to dictionary."""

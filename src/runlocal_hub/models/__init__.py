@@ -1,4 +1,5 @@
 from .benchmark import (
+    Framework,
     BenchmarkData,
     BenchmarkDataFloat,
     BenchmarkDbItem,
@@ -19,6 +20,7 @@ __all__ = [
     "BenchmarkDataFloat",
     "BenchmarkDbItem",
     "BenchmarkResult",
+    "Framework",
     "IOType",
     "TensorInfo",
     "IOTensorsMetadata",
