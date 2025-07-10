@@ -15,7 +15,6 @@ import numpy as np
 from runlocal_hub.models.benchmark import (
     BenchmarkDbItem,
     BenchmarkStatus,
-    BenchmarkTableSchema,
 )
 from runlocal_hub.models.model import UploadDbItem
 from runlocal_hub.utils.json import convert_to_json_friendly
