@@ -8,6 +8,7 @@ from rich.console import Console
 from rich.table import Table
 
 from ..models.benchmark_result import BenchmarkResult
+from ..models.benchmark import BenchmarkStatus, BenchmarkTableSchema
 
 
 def display_benchmark_results(
@@ -224,3 +225,118 @@ def display_failed_benchmarks(
         if benchmark_data.Stderr:
             console.print("[red]Stderr:[/red]")
             console.print(benchmark_data.Stderr)
+
+
+def display_benchmark_table(
+    table_data: Union[BenchmarkTableSchema, List[BenchmarkTableSchema]],
+):
+    """
+    Display benchmark table data in a formatted table using rich.
+
+    Args:
+        table_data: List of BenchmarkTableSchema objects to display
+        show_all_columns: If True, show all available columns. If False, show default columns only.
+    """
+    console = Console()
+
+    if isinstance(table_data, BenchmarkTableSchema):
+        table_data = [table_data]
+
+    if len(table_data) == 0:
+        console.print("[yellow]No benchmark table data to display[/yellow]")
+        return
+
+    # Create table
+    table = Table(
+        title="[yellow]📊[/yellow] Benchmark Table Data",
+        title_style="bold",
+        show_header=True,
+        header_style="bold magenta",
+        show_lines=True,
+        expand=True,
+    )
+
+    # Add columns
+    table.add_column("Device")
+    table.add_column("SoC", style="cyan")
+    table.add_column("Compute Units", style="green")
+
+    # Check if we have GenAI metrics in any row
+    has_genai_metrics = any(
+        row.PrefillTPS is not None or row.GenerateTPS is not None for row in table_data
+    )
+
+    if has_genai_metrics:
+        table.add_column("Prefill Tokens", justify="right", style="yellow")
+        table.add_column("Generate Tokens", justify="right", style="yellow")
+        table.add_column("Prefill TPS", justify="right", style="yellow")
+        table.add_column("Generate TPS", justify="right", style="yellow")
+    else:
+        table.add_column("Median Inference (ms)", justify="right", style="yellow")
+
+    # Always show load time
+    table.add_column("Median Load (ms)", justify="right", style="yellow")
+
+    if has_genai_metrics:
+        table.add_column("Peak Prefill RAM (MB)", justify="right", style="blue")
+        table.add_column("Peak Generate RAM (MB)", justify="right", style="blue")
+    else:
+        table.add_column("Peak Inference RAM (MB)", justify="right", style="blue")
+
+    table.add_column("Peak Load RAM (MB)", justify="right", style="blue")
+
+    # Add rows
+    for row in table_data:
+        if row.Status != BenchmarkStatus.Complete:
+            continue
+
+        # Extract device info
+        device_name = row.DeviceInfo.Name if row.DeviceInfo else "Unknown"
+        device_soc = row.DeviceInfo.Soc if row.DeviceInfo else "Unknown"
+
+        # Prepare row data
+        row_data = [
+            device_name,
+            device_soc,
+            row.ComputeUnits or "N/A",
+        ]
+
+        # Add performance metrics
+        if has_genai_metrics:
+            prefill_tokens = str(row.PrefillTokens) or "N/A"
+            generate_tokens = str(row.GenerationTokens) or "N/A"
+            prefill_tps = f"{row.PrefillTPS:.2f}" if row.PrefillTPS else "N/A"
+            generate_tps = f"{row.GenerateTPS:.2f}" if row.GenerateTPS else "N/A"
+            row_data.extend(
+                [prefill_tokens, generate_tokens, prefill_tps, generate_tps]
+            )
+        else:
+            inference_time = (
+                f"{row.InferenceMsMedian:.2f}" if row.InferenceMsMedian else "N/A"
+            )
+            row_data.append(inference_time)
+
+        # Load time
+        load_time = f"{row.LoadMsMedian:.2f}" if row.LoadMsMedian else "N/A"
+        row_data.append(load_time)
+
+        if has_genai_metrics:
+            prefill_ram = (
+                str(int(row.PeakPrefillRamUsage)) if row.PeakPrefillRamUsage else "N/A"
+            )
+            generate_ram = (
+                str(int(row.PeakGenerateRamUsage))
+                if row.PeakGenerateRamUsage
+                else "N/A"
+            )
+            row_data.extend([prefill_ram, generate_ram])
+        else:
+            inference_ram = str(int(row.PeakRamUsage)) if row.PeakRamUsage else "N/A"
+            row_data.append(inference_ram)
+
+        load_ram = str(int(row.PeakLoadRamUsage)) if row.PeakLoadRamUsage else "N/A"
+        row_data.append(load_ram)
+
+        table.add_row(*row_data)
+
+    console.print(table)
