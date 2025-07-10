@@ -1,6 +1,6 @@
 from decimal import Decimal
 from enum import Enum
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel
 
@@ -37,6 +37,7 @@ class UploadDbItem(BaseModel):
     UpdatedUtc: str
     FileName: str
     FileSize: Decimal
+    Benchmarks: Optional[List[str]] = None
     ModelType: Optional[UploadedModelType] = None
     License: Optional[LicenseInfo] = None
 
