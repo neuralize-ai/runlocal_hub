@@ -90,8 +90,8 @@ def _display_grouped_results(
     if show_load_array:
         table.add_column("Load Array", style="dim")
     if show_ram_usage:
-        table.add_column("Peak Load RAM (MB)", justify="right", style="blue")
         table.add_column("Peak Inference RAM (MB)", justify="right", style="blue")
+        table.add_column("Peak Load RAM (MB)", justify="right", style="blue")
 
     # Process all results
     for result in results:
@@ -167,17 +167,17 @@ def _display_grouped_results(
                     row.append("N/A")
 
             if show_ram_usage:
-                load_ram = (
-                    f"{benchmark_data.PeakLoadRamUsage:.1f}"
-                    if benchmark_data.PeakLoadRamUsage
-                    else "N/A"
-                )
                 inference_ram = (
                     f"{benchmark_data.PeakInferenceRamUsage:.1f}"
                     if benchmark_data.PeakInferenceRamUsage
                     else "N/A"
                 )
-                row.extend([load_ram, inference_ram])
+                load_ram = (
+                    f"{benchmark_data.PeakLoadRamUsage:.1f}"
+                    if benchmark_data.PeakLoadRamUsage
+                    else "N/A"
+                )
+                row.extend([inference_ram, load_ram])
 
             table.add_row(*row)
 
