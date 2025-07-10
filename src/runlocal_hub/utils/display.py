@@ -6,8 +6,11 @@ from typing import List, Union
 
 from rich.console import Console
 from rich.table import Table
+from rich.panel import Panel
+from rich.text import Text
 
 from ..models.benchmark_result import BenchmarkResult
+from ..models.model import UploadDbItem
 
 
 def display_benchmark_results(
@@ -224,3 +227,63 @@ def display_failed_benchmarks(
         if benchmark_data.Stderr:
             console.print("[red]Stderr:[/red]")
             console.print(benchmark_data.Stderr)
+
+
+def display_model(model: UploadDbItem):
+    """
+    Display a single model's information in a formatted panel.
+
+    Args:
+        model: UploadDbItem object to display
+    """
+    console = Console()
+
+    # Format file size
+    file_size_mb = float(model.FileSize) / (1024 * 1024)
+    if file_size_mb >= 1024:
+        file_size_str = f"{file_size_mb / 1024:.2f} GB"
+    else:
+        file_size_str = f"{file_size_mb:.2f} MB"
+
+    # Build the content
+    content = Text()
+
+    # Basic info
+    content.append("Model ID: ", style="bold cyan")
+    content.append(f"{model.UploadId}\n\n")
+
+    content.append("File Name: ", style="bold")
+    content.append(f"{model.FileName}\n")
+
+    if model.ModelType:
+        content.append("Model Type: ", style="bold")
+        content.append(f"{model.ModelType.value}\n")
+
+    content.append("File Size: ", style="bold")
+    content.append(f"{file_size_str}\n\n")
+
+    # Optional fields
+    if model.Tag:
+        content.append("Tag: ", style="bold")
+        content.append(f"{model.Tag}\n")
+
+    if model.Source:
+        content.append("Source: ", style="bold")
+        content.append(f"{model.Source}\n")
+
+    if model.License:
+        content.append("\nLicense: ", style="bold")
+        content.append(f"{model.License.name}\n")
+        content.append("License URL: ", style="bold")
+        content.append(f"{model.License.url}\n", style="blue underline")
+
+    # Create panel
+    panel = Panel(
+        content,
+        title="[bold yellow]📦 Model Information[/bold yellow]",
+        border_style="cyan",
+        expand=False,
+        padding=(1, 2),
+    )
+
+    console.print(panel)
