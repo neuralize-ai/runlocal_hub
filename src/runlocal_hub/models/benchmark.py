@@ -12,11 +12,11 @@ from .device import Device
 
 
 class Framework(str, Enum):
-    COREML = "coreml"
-    ONNXRUNTIME = "onnxruntime"
-    OPENVINO = "openvino"
-    TFLITE = "tflite"
-    LLAMACPP = "llamacpp"
+    COREML = "CoreML"
+    ONNXRUNTIME = "ONNX Runtime"
+    OPENVINO = "OpenVINO"
+    TFLITE = "TFLite"
+    LLAMACPP = "LlamaCpp"
 
 
 class BenchmarkStatus(str, Enum):
