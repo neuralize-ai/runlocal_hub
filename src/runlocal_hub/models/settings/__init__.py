@@ -13,6 +13,19 @@ from .onnx import (
     QNNHtpPerformanceMode,
 )
 
+from .openvino import (
+    OpenVINOSettings,
+    CPUSettings,
+    GPUSettings,
+    NPUSettings,
+    InferencePrecision,
+    PerformanceHint,
+    SchedulingCoreType,
+    OVExecutionMode,
+    CacheMode,
+    TaskPriority,
+)
+
 __all__ = [
     "Framework",
     "RuntimeSettings",
@@ -29,4 +42,14 @@ __all__ = [
     "CoreMLModelFormat",
     "CoreMLSpecializationStrategy",
     "QNNHtpPerformanceMode",
+    "OpenVINOSettings",
+    "CPUSettings",
+    "GPUSettings",
+    "NPUSettings",
+    "InferencePrecision",
+    "PerformanceHint",
+    "SchedulingCoreType",
+    "OVExecutionMode",
+    "CacheMode",
+    "TaskPriority",
 ]

@@ -1,8 +1,9 @@
 from enum import Enum
 from typing import Optional
-from .common import NumThreads
 
 from pydantic import BaseModel
+
+from .common import NumThreads
 
 
 class GraphOptimizationLevel(str, Enum):
