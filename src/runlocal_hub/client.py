@@ -44,12 +44,12 @@ class RunLocalClient:
     """
 
     BASE_URL = "https://neuralize-bench.com"
-    # BASE_URL = "http://127.0.0.1:8000"  # Local development
     ENV_VAR_NAME = "RUNLOCAL_API_KEY"
 
     def __init__(
         self,
         debug: bool = False,
+        local_server: bool = False,
     ):
         """
         Initialize the RunLocal client.
@@ -66,6 +66,9 @@ class RunLocalClient:
                 config_key=self.ENV_VAR_NAME,
                 suggestion=f"export {self.ENV_VAR_NAME}=your-api-key-here",
             )
+
+        if local_server:
+            self.BASE_URL = "http://127.0.0.1:8000"
 
         # Initialize HTTP client
         self.http_client = HTTPClient(
