@@ -471,7 +471,7 @@ class RunLocalClient:
         inputs: Dict[str, np.ndarray],
         model_path: Optional[Union[Path, str]] = None,
         model_id: Optional[str] = None,
-        framework: Optional[Framework] = None,
+        settings: Optional[RuntimeSettings] = None,
         device_filters: Optional[Union[DeviceFilters, List[DeviceFilters]]] = None,
         timeout: Optional[int] = 600,
         poll_interval: int = 10,
@@ -486,7 +486,7 @@ class RunLocalClient:
             inputs: Dictionary mapping input names to numpy arrays
             model_path: Path to the model file or folder (if model_id not provided)
             model_id: ID of already uploaded model (if model_path not provided)
-            framework: Optional manual override of runtime framework
+            settings: Optional manual override of runtime framework and runtime framework settings configuration
             device_filters: Optional filters for device selection. Can be a single DeviceFilters
                           object or a list of DeviceFilters to apply with OR logic (union)
             timeout: Maximum time in seconds to wait for completion
@@ -535,7 +535,7 @@ class RunLocalClient:
         user_models = self.get_models_ids()
         devices = self.device_selector.select_devices(
             model_id=model_id,
-            framework=framework,
+            framework=settings.framework if settings is not None else None,
             filters=device_filters,
             count=device_count,
             user_models=user_models,
@@ -548,7 +548,7 @@ class RunLocalClient:
         return self._run_predictions(
             model_id=model_id,
             devices=devices,
-            framework=framework,
+            settings=settings,
             inputs=inputs,
             timeout=timeout,
             poll_interval=poll_interval,
@@ -594,8 +594,6 @@ class RunLocalClient:
             device_requests=device_requests,
             settings=settings,
         )
-
-        print(f"settings: {settings}")
 
         # Add input tensors to the payload if provided
         if input_tensors_id is not None:
@@ -702,7 +700,7 @@ class RunLocalClient:
         model_id: str,
         devices: List[DeviceUsage],
         inputs: Dict[str, np.ndarray],
-        framework: Optional[Framework] = None,
+        settings: Optional[RuntimeSettings] = None,
         timeout: Optional[int] = 600,
         poll_interval: int = 10,
         output_dir: Optional[Union[str, Path]] = None,
@@ -731,12 +729,10 @@ class RunLocalClient:
 
         benchmark_request: BenchmarkRequest = BenchmarkRequest(
             device_requests=device_requests,
+            settings=settings,
             input_tensors_id=input_tensors_id,
             job_type=JobType.PREDICTION,
         )
-
-        if framework is not None:
-            benchmark_request.settings = RuntimeSettings(framework=framework)
 
         # Submit all prediction jobs at once
         response = self.http_client.post(
