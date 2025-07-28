@@ -14,4 +14,4 @@ class CoreMLSettings(BaseModel):
     specializationStrategy: Optional[SpecializationStrategy] = None
 
     def format(self):
-        return {"CoreML": self.model_dump()}
+        return {"CoreML": self.model_dump(exclude_unset=True)}
