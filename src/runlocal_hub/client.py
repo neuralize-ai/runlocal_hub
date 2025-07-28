@@ -16,7 +16,6 @@ from runlocal_hub.models import (
     BenchmarkRequest,
     RuntimeSettings,
     BenchmarkStatus,
-    Framework,
 )
 from runlocal_hub.models.model import UploadDbItem
 from runlocal_hub.utils.json import convert_to_json_friendly

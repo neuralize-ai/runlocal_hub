@@ -21,7 +21,7 @@ def main():
             inputs=inputs,
             model_path=model_path,
             device_filters=device_filters,
-            timeout=300,  # 5 minute timeout
+            timeout=None,
         )
 
         if isinstance(result, list):
