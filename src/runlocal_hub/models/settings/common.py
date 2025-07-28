@@ -34,3 +34,8 @@ class BenchmarkRequest(BaseModel):
     job_type: JobType = (
         JobType.BENCHMARK
     )  # Default to benchmark for backward compatibility
+
+
+class NumThreads(str, Enum):
+    ALL_CORES = "allcores"
+    HALF_CORES = "halfcores"
