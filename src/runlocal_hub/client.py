@@ -6,14 +6,15 @@ import os
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import Dict, List, Optional, Union, Any
-
-from tqdm import tqdm
+from typing import Dict, List, Optional, Union
 
 import numpy as np
+from tqdm import tqdm
 
-from runlocal_hub.models.benchmark import (
+from runlocal_hub.models import (
     BenchmarkDbItem,
+    BenchmarkRequest,
+    RuntimeSettings,
     BenchmarkStatus,
 )
 from runlocal_hub.models.model import UploadDbItem
@@ -24,14 +25,14 @@ from .exceptions import ConfigurationError, RunLocalError, UploadError, Validati
 from .http import HTTPClient
 from .jobs import JobPoller
 from .models import (
+    BenchmarkData,
+    BenchmarkDataFloat,
+    BenchmarkResult,
+    Device,
     DeviceUsage,
     IOType,
     JobType,
     PredictionResult,
-    BenchmarkResult,
-    Device,
-    BenchmarkData,
-    BenchmarkDataFloat,
 )
 from .tensors import TensorHandler
 from .utils.decorators import handle_api_errors
@@ -42,13 +43,13 @@ class RunLocalClient:
     Simplified Python client for the RunLocal API.
     """
 
-    # BASE_URL = "https://neuralize-bench.com"
-    BASE_URL = "http://127.0.0.1:8000"  # Local development
+    BASE_URL = "https://neuralize-bench.com"
     ENV_VAR_NAME = "RUNLOCAL_API_KEY"
 
     def __init__(
         self,
         debug: bool = False,
+        local_server: bool = False,
     ):
         """
         Initialize the RunLocal client.
@@ -65,6 +66,9 @@ class RunLocalClient:
                 config_key=self.ENV_VAR_NAME,
                 suggestion=f"export {self.ENV_VAR_NAME}=your-api-key-here",
             )
+
+        if local_server:
+            self.BASE_URL = "http://127.0.0.1:8000"
 
         # Initialize HTTP client
         self.http_client = HTTPClient(
@@ -375,6 +379,7 @@ class RunLocalClient:
         self,
         model_path: Optional[Union[Path, str]] = None,
         model_id: Optional[str] = None,
+        settings: Optional[RuntimeSettings] = None,
         device_filters: Optional[Union[DeviceFilters, List[DeviceFilters]]] = None,
         inputs: Optional[Dict[str, np.ndarray]] = None,
         timeout: Optional[int] = 600,
@@ -390,6 +395,7 @@ class RunLocalClient:
         Args:
             model_path: Path to the model file or folder (if model_id not provided)
             model_id: ID of already uploaded model (if model_path not provided)
+            settings: Optional manual override of runtime framework and runtime framework settings configuration
             device_filters: Optional filters for device selection. Can be a single DeviceFilters
                           object or a list of DeviceFilters to apply with OR logic (union)
             inputs: Optional dictionary mapping input names to numpy arrays
@@ -441,6 +447,7 @@ class RunLocalClient:
         user_models = self.get_models_ids()
         devices = self.device_selector.select_devices(
             model_id=model_id,
+            framework=settings.framework if settings is not None else None,
             filters=device_filters,
             count=device_count,
             user_models=user_models,
@@ -453,6 +460,7 @@ class RunLocalClient:
         return self._run_benchmarks(
             model_id=model_id,
             devices=devices,
+            settings=settings,
             inputs=inputs,
             timeout=timeout,
             poll_interval=poll_interval,
@@ -465,6 +473,7 @@ class RunLocalClient:
         inputs: Dict[str, np.ndarray],
         model_path: Optional[Union[Path, str]] = None,
         model_id: Optional[str] = None,
+        settings: Optional[RuntimeSettings] = None,
         device_filters: Optional[Union[DeviceFilters, List[DeviceFilters]]] = None,
         timeout: Optional[int] = 600,
         poll_interval: int = 10,
@@ -479,6 +488,7 @@ class RunLocalClient:
             inputs: Dictionary mapping input names to numpy arrays
             model_path: Path to the model file or folder (if model_id not provided)
             model_id: ID of already uploaded model (if model_path not provided)
+            settings: Optional manual override of runtime framework and runtime framework settings configuration
             device_filters: Optional filters for device selection. Can be a single DeviceFilters
                           object or a list of DeviceFilters to apply with OR logic (union)
             timeout: Maximum time in seconds to wait for completion
@@ -527,6 +537,7 @@ class RunLocalClient:
         user_models = self.get_models_ids()
         devices = self.device_selector.select_devices(
             model_id=model_id,
+            framework=settings.framework if settings is not None else None,
             filters=device_filters,
             count=device_count,
             user_models=user_models,
@@ -539,6 +550,7 @@ class RunLocalClient:
         return self._run_predictions(
             model_id=model_id,
             devices=devices,
+            settings=settings,
             inputs=inputs,
             timeout=timeout,
             poll_interval=poll_interval,
@@ -549,6 +561,7 @@ class RunLocalClient:
         self,
         model_id: str,
         devices: List[DeviceUsage],
+        settings: Optional[RuntimeSettings] = None,
         inputs: Optional[Dict[str, np.ndarray]] = None,
         timeout: Optional[int] = 600,
         poll_interval: int = 10,
@@ -579,19 +592,19 @@ class RunLocalClient:
             }
             device_requests.append(device_request)
 
-        # Prepare the data payload
-        data: Dict[str, Any] = {
-            "device_requests": device_requests,
-        }
+        benchmark_request: BenchmarkRequest = BenchmarkRequest(
+            device_requests=device_requests,
+            settings=settings,
+        )
 
         # Add input tensors to the payload if provided
         if input_tensors_id is not None:
-            data["input_tensors_id"] = input_tensors_id
+            benchmark_request.input_tensors_id = input_tensors_id
 
         # Submit all benchmarks at once
         response = self.http_client.post(
             f"/coreml/benchmark/enqueue?upload_id={model_id}",
-            data=data,
+            data=benchmark_request.model_dump(),
         )
 
         # Extract benchmark IDs from the response
@@ -689,6 +702,7 @@ class RunLocalClient:
         model_id: str,
         devices: List[DeviceUsage],
         inputs: Dict[str, np.ndarray],
+        settings: Optional[RuntimeSettings] = None,
         timeout: Optional[int] = 600,
         poll_interval: int = 10,
         output_dir: Optional[Union[str, Path]] = None,
@@ -715,17 +729,17 @@ class RunLocalClient:
             }
             device_requests.append(device_request)
 
-        # Prepare the data payload for prediction jobs
-        data = {
-            "device_requests": device_requests,
-            "input_tensors_id": input_tensors_id,
-            "job_type": JobType.PREDICTION.value,
-        }
+        benchmark_request: BenchmarkRequest = BenchmarkRequest(
+            device_requests=device_requests,
+            settings=settings,
+            input_tensors_id=input_tensors_id,
+            job_type=JobType.PREDICTION,
+        )
 
         # Submit all prediction jobs at once
         response = self.http_client.post(
             f"/coreml/benchmark/enqueue?upload_id={model_id}",
-            data=data,
+            data=benchmark_request.model_dump(),
         )
 
         # Extract the benchmark IDs

@@ -3,30 +3,13 @@ Benchmark-related models.
 """
 
 from decimal import Decimal
-from enum import Enum
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
 from .device import Device
-
-
-class Framework(str, Enum):
-    COREML = "coreml"
-    ONNXRUNTIME = "onnxruntime"
-    OPENVINO = "openvino"
-    TFLITE = "tflite"
-    LLAMACPP = "llamacpp"
-
-
-class BenchmarkStatus(str, Enum):
-    """Status of a benchmark job."""
-
-    Pending = "Pending"  # not started, still in queue
-    Complete = "Complete"
-    Failed = "Failed"
-    Running = "Running"
-    Deleted = "Deleted"
+from .job import BenchmarkStatus
+from .settings import Framework
 
 
 class BenchmarkData(BaseModel):
@@ -64,12 +47,15 @@ class BenchmarkData(BaseModel):
 
     OutputTensorsId: Optional[str] = None
 
+    Versions: Optional[Dict[str, str]] = None
+    Settings: Optional[Dict[str, Any]] = None
+
     def to_json_dict(self) -> Dict:
         """
         Convert to JSON-friendly dictionary.
         Needed for post requests where Decimals need to be strings.
         """
-        from ..utils.json import decimal_to_str, decimal_list_to_str
+        from ..utils.json import decimal_list_to_str, decimal_to_str
 
         result = {
             "Success": self.Success,
@@ -93,6 +79,8 @@ class BenchmarkData(BaseModel):
             "PeakRamUsage": decimal_to_str(self.PeakRamUsage),
             "PeakPrefillRamUsage": decimal_to_str(self.PeakPrefillRamUsage),
             "PeakGenerateRamUsage": decimal_to_str(self.PeakGenerateRamUsage),
+            "Versions": self.Versions,
+            "Settings": self.Settings,
         }
 
         # Remove None values
@@ -139,6 +127,8 @@ class BenchmarkData(BaseModel):
             "PeakPrefillRamUsage": decimal_to_float(self.PeakPrefillRamUsage),
             "PeakGenerateRamUsage": decimal_to_float(self.PeakGenerateRamUsage),
             "OutputTensorsId": self.OutputTensorsId,
+            "Versions": self.Versions,
+            "Settings": self.Settings,
         }
 
 
@@ -174,6 +164,9 @@ class BenchmarkDataFloat(BaseModel):
     Stderr: Optional[str] = None
 
     OutputTensorsId: Optional[str] = None
+
+    Versions: Optional[Dict[str, str]] = None
+    Settings: Optional[Dict[str, Any]] = None
 
     @classmethod
     def from_benchmark_data(cls, bd: BenchmarkData) -> "BenchmarkDataFloat":

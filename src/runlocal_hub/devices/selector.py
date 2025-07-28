@@ -8,6 +8,8 @@ from typing import List, Optional, Union
 from rich.console import Console
 from rich.table import Table
 
+from runlocal_hub.models.benchmark import Framework
+
 from ..exceptions import DeviceNotAvailableError
 from ..http import HTTPClient
 from ..models import DeviceUsage
@@ -30,12 +32,15 @@ class DeviceSelector:
         self.http_client = http_client
 
     @handle_api_errors
-    def list_all_devices(self, model_id: Optional[str] = None) -> List[DeviceUsage]:
+    def list_all_devices(
+        self, model_id: Optional[str] = None, framework: Optional[Framework] = None
+    ) -> List[DeviceUsage]:
         """
         Get a list of available devices for benchmarking.
 
         Args:
             model_id: Optional ID of a model to get compatible devices
+            framework: Optional manual override of runtime framework
 
         Returns:
             List of available devices with their compute units
@@ -44,8 +49,11 @@ class DeviceSelector:
             ModelNotFoundError: If the model ID is not found
         """
         endpoint = "/devices/benchmark"
-        if model_id:
+        if model_id is not None:
             endpoint += f"?upload_id={model_id}"
+
+        if framework is not None:
+            endpoint += f"&framework={framework.value}"
 
         response = self.http_client.get(endpoint)
 
@@ -79,6 +87,7 @@ class DeviceSelector:
     def select_devices(
         self,
         model_id: str,
+        framework: Optional[Framework] = None,
         filters: Optional[Union[DeviceFilters, List[DeviceFilters]]] = None,
         count: Optional[int] = 1,
         user_models: Optional[List[str]] = None,
@@ -117,7 +126,7 @@ class DeviceSelector:
             )
 
         # Get all available devices for this model
-        all_devices = self.list_all_devices(model_id=model_id)
+        all_devices = self.list_all_devices(model_id=model_id, framework=framework)
 
         # Handle different filter types
         if filters is None:
