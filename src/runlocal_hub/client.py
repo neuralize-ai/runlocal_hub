@@ -14,7 +14,7 @@ from tqdm import tqdm
 from runlocal_hub.models import (
     BenchmarkDbItem,
     BenchmarkRequest,
-    BenchmarkSettings,
+    RuntimeSettings,
     BenchmarkStatus,
     Framework,
 )
@@ -377,7 +377,7 @@ class RunLocalClient:
         self,
         model_path: Optional[Union[Path, str]] = None,
         model_id: Optional[str] = None,
-        settings: Optional[BenchmarkSettings] = None,
+        settings: Optional[RuntimeSettings] = None,
         device_filters: Optional[Union[DeviceFilters, List[DeviceFilters]]] = None,
         inputs: Optional[Dict[str, np.ndarray]] = None,
         timeout: Optional[int] = 600,
@@ -559,7 +559,7 @@ class RunLocalClient:
         self,
         model_id: str,
         devices: List[DeviceUsage],
-        settings: Optional[BenchmarkSettings] = None,
+        settings: Optional[RuntimeSettings] = None,
         inputs: Optional[Dict[str, np.ndarray]] = None,
         timeout: Optional[int] = 600,
         poll_interval: int = 10,
@@ -736,7 +736,7 @@ class RunLocalClient:
         )
 
         if framework is not None:
-            benchmark_request.settings = BenchmarkSettings(framework=framework)
+            benchmark_request.settings = RuntimeSettings(framework=framework)
 
         # Submit all prediction jobs at once
         response = self.http_client.post(

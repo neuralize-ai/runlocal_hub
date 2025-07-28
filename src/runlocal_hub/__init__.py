@@ -26,7 +26,7 @@ from .models import (
     JobType,
     IOType,
     TensorInfo,
-    BenchmarkSettings,
+    RuntimeSettings,
 )
 from .utils import (
     display_benchmark_results,
@@ -46,7 +46,7 @@ __all__ = [
     "TensorInfo",
     "BenchmarkData",
     "BenchmarkStatus",
-    "BenchmarkSettings",
+    "RuntimeSettings",
     "Framework",
     "RunLocalError",
     "AuthenticationError",

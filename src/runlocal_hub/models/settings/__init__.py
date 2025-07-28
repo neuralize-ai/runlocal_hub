@@ -1,7 +1,7 @@
-from .common import Framework, BenchmarkSettings, BenchmarkRequest
+from .common import Framework, RuntimeSettings, BenchmarkRequest
 
 __all__ = [
     "Framework",
-    "BenchmarkSettings",
+    "RuntimeSettings",
     "BenchmarkRequest",
 ]

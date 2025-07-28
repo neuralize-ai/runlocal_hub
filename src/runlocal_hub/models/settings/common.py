@@ -14,7 +14,7 @@ class Framework(str, Enum):
     LLAMACPP = "LlamaCpp"
 
 
-class BenchmarkSettings(BaseModel):
+class RuntimeSettings(BaseModel):
     # Overwrite default framework (eg. use openvino for onnx model)
     framework: Optional[Framework] = None
     framework_settings: Optional[Dict[str, Any]] = None
@@ -29,7 +29,7 @@ class BenchmarkRequest(BaseModel):
     device_requests: List[DeviceBenchmarkRequest]
     test_name: Optional[str] = None
     user_id: Optional[str] = None
-    settings: Optional[BenchmarkSettings] = None
+    settings: Optional[RuntimeSettings] = None
     input_tensors_id: Optional[str] = None
     job_type: JobType = (
         JobType.BENCHMARK
