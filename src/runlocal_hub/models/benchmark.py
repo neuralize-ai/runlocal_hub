@@ -182,6 +182,9 @@ class BenchmarkDataFloat(BaseModel):
 
     OutputTensorsId: Optional[str] = None
 
+    Versions: Optional[Dict[str, str]] = None
+    Settings: Optional[Dict[str, Any]] = None
+
     @classmethod
     def from_benchmark_data(cls, bd: BenchmarkData) -> "BenchmarkDataFloat":
         """Create a BenchmarkDataFloat from a BenchmarkData instance."""
