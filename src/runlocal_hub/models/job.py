@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Optional
 
-from ..models import BenchmarkStatus
 from .device import Device
 
 
@@ -15,6 +14,16 @@ class JobType(str, Enum):
 
     BENCHMARK = "benchmark"
     PREDICTION = "prediction"
+
+
+class BenchmarkStatus(str, Enum):
+    """Status of a benchmark job."""
+
+    Pending = "Pending"  # not started, still in queue
+    Complete = "Complete"
+    Failed = "Failed"
+    Running = "Running"
+    Deleted = "Deleted"
 
 
 @dataclass
