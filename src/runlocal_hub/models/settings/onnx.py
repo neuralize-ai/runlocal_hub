@@ -17,17 +17,17 @@ class ExecutionMode(str, Enum):
     PARALLEL = "parallel"
 
 
-class ModelFormat(str, Enum):
+class CoreMLModelFormat(str, Enum):
     NEURAL_NETWORK = "NeuralNetwork"
     ML_PROGRAM = "MLProgram"
 
 
-class SpecializationStrategy(str, Enum):
+class CoreMLSpecializationStrategy(str, Enum):
     DEFAULT = "Default"
     FAST_PREDICTION = "FastPrediction"
 
 
-class HtpPerformanceMode(str, Enum):
+class QNNHtpPerformanceMode(str, Enum):
     BURST = "burst"
     BALANCED = "balanced"
     HIGH_PERFORMANCE = "high_performance"
@@ -37,26 +37,26 @@ class HtpPerformanceMode(str, Enum):
     SUSTAINED_HIGH_PERFORMANCE = "sustained_high_performance"
 
 
-class XNNPACKSettings(BaseModel):
+class XNNPACKEpSettings(BaseModel):
     intra_op_num_threads: Optional[int | NumThreads] = None
 
 
-class OpenVINOSettings(BaseModel):
+class OpenVINOEpSettings(BaseModel):
     num_of_threads: Optional[int | NumThreads] = None
     enable_qdq_optimizer: Optional[bool] = None
     disable_dynamic_shapes: Optional[bool] = None
 
 
-class CoreMLSettings(BaseModel):
-    ModelFormat: Optional["ModelFormat"] = None
+class CoreMLEpSettings(BaseModel):
+    ModelFormat: Optional["CoreMLModelFormat"] = None
     RequireStaticInputShapes: Optional[bool] = None
     EnableOnSubgraphs: Optional[bool] = None
-    SpecializationStrategy: Optional["SpecializationStrategy"] = None
+    SpecializationStrategy: Optional[CoreMLSpecializationStrategy] = None
     AllowLowPrecisionAccumulationOnGPU: Optional[bool] = None
 
 
-class QNNSettings(BaseModel):
-    htp_performance_mode: Optional[HtpPerformanceMode] = None
+class QNNEpSettings(BaseModel):
+    htp_performance_mode: Optional[QNNHtpPerformanceMode] = None
     htp_graph_finalization_optimization_mode: Optional[int] = None
     enable_htp_fp16_precision: Optional[bool] = None
     offload_graph_io_quantization: Optional[bool] = None
@@ -72,10 +72,10 @@ class OnnxSettings(BaseModel):
     execution_mode: Optional[ExecutionMode] = None
 
     # Execution Provider specific settings
-    XNNPACK: Optional[XNNPACKSettings] = None
-    OpenVINO: Optional[OpenVINOSettings] = None
-    CoreML: Optional[CoreMLSettings] = None
-    QNN: Optional[QNNSettings] = None
+    XNNPACK: Optional[XNNPACKEpSettings] = None
+    OpenVINO: Optional[OpenVINOEpSettings] = None
+    CoreML: Optional[CoreMLEpSettings] = None
+    QNN: Optional[QNNEpSettings] = None
 
     def format(self):
         return {"Onnx": self.model_dump(exclude_unset=True)}
