@@ -6,16 +6,6 @@ from pydantic import BaseModel
 from .job import JobType
 
 
-class SpecializationStrategy(str, Enum):
-    default = "default"
-    fastPrediction = "fastPrediction"
-
-
-class CoreMLSettings(BaseModel):
-    allowLowPrecisionAccumulationOnGPU: Optional[bool] = None
-    specializationStrategy: Optional[SpecializationStrategy] = None
-
-
 class Framework(str, Enum):
     COREML = "CoreML"
     ONNXRUNTIME = "ONNX Runtime"
