@@ -10,6 +10,7 @@ def main():
 
     device_filters = DeviceFilters(
         device_name="MacBook",  # Filter by device name
+        year_min=2023,
     )
 
     try:
