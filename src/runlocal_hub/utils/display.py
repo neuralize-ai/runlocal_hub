@@ -134,6 +134,11 @@ def _display_grouped_results(
     table.add_column("RAM", style="dim", justify="right")
     table.add_column("Compute Unit", style="green")
 
+    if show_versions:
+        table.add_column("Versions", style="dim")
+    if show_settings:
+        table.add_column("Settings", style="dim")
+
     # Add time columns based on preferences
     if show_mean:
         table.add_column("Mean Inference (ms)", justify="right", style="yellow")
@@ -142,7 +147,6 @@ def _display_grouped_results(
         table.add_column("Median Inference (ms)", justify="right", style="yellow")
         table.add_column("Median Load (ms)", justify="right", style="yellow")
 
-    # Optional columns
     if show_inference_array:
         table.add_column("Inference Array", style="dim")
     if show_load_array:
@@ -150,10 +154,6 @@ def _display_grouped_results(
     if show_ram_usage:
         table.add_column("Peak Inference RAM (MB)", justify="right", style="blue")
         table.add_column("Peak Load RAM (MB)", justify="right", style="blue")
-    if show_versions:
-        table.add_column("Versions", style="dim")
-    if show_settings:
-        table.add_column("Settings", style="dim")
 
     # Process all results
     for result in results:
@@ -178,6 +178,12 @@ def _display_grouped_results(
                 row.extend(["", "", ""])
 
             row.append(benchmark_data.ComputeUnit)
+
+            if show_versions:
+                row.append(_format_versions(benchmark_data.Versions))
+
+            if show_settings:
+                row.append(_format_settings(benchmark_data.Settings))
 
             # Time metrics
             if show_mean:
@@ -205,7 +211,6 @@ def _display_grouped_results(
 
             row.extend([inference_time, load_time])
 
-            # Optional columns
             if show_inference_array:
                 if benchmark_data.InferenceMsArray:
                     array_str = ", ".join(
@@ -240,12 +245,6 @@ def _display_grouped_results(
                     else "N/A"
                 )
                 row.extend([inference_ram, load_ram])
-
-            if show_versions:
-                row.append(_format_versions(benchmark_data.Versions))
-
-            if show_settings:
-                row.append(_format_settings(benchmark_data.Settings))
 
             table.add_row(*row)
 
