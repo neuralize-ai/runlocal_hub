@@ -377,7 +377,7 @@ class RunLocalClient:
         self,
         model_path: Optional[Union[Path, str]] = None,
         model_id: Optional[str] = None,
-        framework: Optional[Framework] = None,
+        settings: Optional[BenchmarkSettings] = None,
         device_filters: Optional[Union[DeviceFilters, List[DeviceFilters]]] = None,
         inputs: Optional[Dict[str, np.ndarray]] = None,
         timeout: Optional[int] = 600,
@@ -393,7 +393,7 @@ class RunLocalClient:
         Args:
             model_path: Path to the model file or folder (if model_id not provided)
             model_id: ID of already uploaded model (if model_path not provided)
-            framework: Optional manual override of runtime framework
+            settings: Optional manual override of runtime framework and runtime framework settings configuration
             device_filters: Optional filters for device selection. Can be a single DeviceFilters
                           object or a list of DeviceFilters to apply with OR logic (union)
             inputs: Optional dictionary mapping input names to numpy arrays
@@ -445,7 +445,7 @@ class RunLocalClient:
         user_models = self.get_models_ids()
         devices = self.device_selector.select_devices(
             model_id=model_id,
-            framework=framework,
+            framework=settings.framework if settings is not None else None,
             filters=device_filters,
             count=device_count,
             user_models=user_models,
@@ -458,7 +458,7 @@ class RunLocalClient:
         return self._run_benchmarks(
             model_id=model_id,
             devices=devices,
-            framework=framework,
+            settings=settings,
             inputs=inputs,
             timeout=timeout,
             poll_interval=poll_interval,
@@ -559,7 +559,7 @@ class RunLocalClient:
         self,
         model_id: str,
         devices: List[DeviceUsage],
-        framework: Optional[Framework] = None,
+        settings: Optional[BenchmarkSettings] = None,
         inputs: Optional[Dict[str, np.ndarray]] = None,
         timeout: Optional[int] = 600,
         poll_interval: int = 10,
@@ -592,10 +592,10 @@ class RunLocalClient:
 
         benchmark_request: BenchmarkRequest = BenchmarkRequest(
             device_requests=device_requests,
+            settings=settings,
         )
 
-        if framework is not None:
-            benchmark_request.settings = BenchmarkSettings(framework=framework)
+        print(f"settings: {settings}")
 
         # Add input tensors to the payload if provided
         if input_tensors_id is not None:
