@@ -6,13 +6,12 @@ import os
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import Dict, List, Optional, Union, Any
-
-from tqdm import tqdm
+from typing import Dict, List, Optional, Union
 
 import numpy as np
+from tqdm import tqdm
 
-from runlocal_hub.models.benchmark import (
+from runlocal_hub.models import (
     BenchmarkDbItem,
     BenchmarkRequest,
     BenchmarkSettings,
@@ -27,14 +26,14 @@ from .exceptions import ConfigurationError, RunLocalError, UploadError, Validati
 from .http import HTTPClient
 from .jobs import JobPoller
 from .models import (
+    BenchmarkData,
+    BenchmarkDataFloat,
+    BenchmarkResult,
+    Device,
     DeviceUsage,
     IOType,
     JobType,
     PredictionResult,
-    BenchmarkResult,
-    Device,
-    BenchmarkData,
-    BenchmarkDataFloat,
 )
 from .tensors import TensorHandler
 from .utils.decorators import handle_api_errors

@@ -1,15 +1,14 @@
 from .benchmark import (
-    Framework,
     BenchmarkData,
     BenchmarkDataFloat,
     BenchmarkDbItem,
-    BenchmarkStatus,
 )
 from .benchmark_result import BenchmarkResult
 from .device import Device, DeviceUsage
-from .job import JobResult, JobType
+from .job import JobResult, JobType, BenchmarkStatus
 from .model import LicenseInfo, UploadDbItem, UploadedModelType
 from .prediction import PredictionResult
+from .settings import Framework, BenchmarkSettings, BenchmarkRequest
 from .tensor import IOTensorsMetadata, IOTensorsPresignedUrlResponse, IOType, TensorInfo
 
 __all__ = [
@@ -20,6 +19,8 @@ __all__ = [
     "BenchmarkDataFloat",
     "BenchmarkDbItem",
     "BenchmarkResult",
+    "BenchmarkSettings",
+    "BenchmarkRequest",
     "Framework",
     "IOType",
     "TensorInfo",

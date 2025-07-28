@@ -2,25 +2,36 @@
 
 from .__version__ import __version__
 from .client import RunLocalClient
-from .models.device import Device, DeviceUsage
-from .models.job import JobType, JobResult
-from .models.benchmark import BenchmarkData, BenchmarkStatus
-from .models.tensor import IOType, TensorInfo
-from .devices.filters import DeviceFilters
+from .devices import DeviceFilters
 from .exceptions import (
-    RunLocalError,
-    AuthenticationError,
     APIError,
-    ModelNotFoundError,
+    AuthenticationError,
+    ConfigurationError,
     DeviceNotAvailableError,
     JobTimeoutError,
+    ModelNotFoundError,
+    NetworkError,
+    RunLocalError,
     TensorError,
     UploadError,
     ValidationError,
-    NetworkError,
-    ConfigurationError,
 )
-from .utils.display import display_benchmark_results, display_failed_benchmarks, display_model
+from .models import (
+    BenchmarkData,
+    BenchmarkStatus,
+    Framework,
+    Device,
+    DeviceUsage,
+    JobResult,
+    JobType,
+    IOType,
+    TensorInfo,
+)
+from .utils import (
+    display_benchmark_results,
+    display_failed_benchmarks,
+    display_model,
+)
 
 __all__ = [
     "__version__",
@@ -34,6 +45,7 @@ __all__ = [
     "TensorInfo",
     "BenchmarkData",
     "BenchmarkStatus",
+    "Framework",
     "RunLocalError",
     "AuthenticationError",
     "APIError",
