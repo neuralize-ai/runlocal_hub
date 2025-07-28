@@ -29,6 +29,25 @@ class BenchmarkStatus(str, Enum):
     Deleted = "Deleted"
 
 
+class BenchmarkSettings(BaseModel):
+    # Overwrite default framework (eg. use openvino for onnx model)
+    framework: Optional[Framework] = None
+    framework_settings: Optional[Dict[str, Any]] = None
+
+
+class DeviceBenchmarkRequest(BaseModel):
+    device_id: str
+    compute_units: Optional[List[str]] = None
+
+
+class BenchmarkRequest(BaseModel):
+    device_requests: List[DeviceBenchmarkRequest]
+    test_name: Optional[str] = None
+    user_id: Optional[str] = None
+    settings: Optional[BenchmarkSettings] = None
+    input_tensors_id: Optional[str] = None
+
+
 class BenchmarkData(BaseModel):
     """Data from a single benchmark run."""
 

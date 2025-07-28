@@ -579,19 +579,21 @@ class RunLocalClient:
             }
             device_requests.append(device_request)
 
-        # Prepare the data payload
-        data: Dict[str, Any] = {
-            "device_requests": device_requests,
-        }
+        benchmark_request: BenchmarkRequest = BenchmarkRequest(
+            device_requests=device_requests,
+        )
+
+        if framework is not None:
+            benchmark_request.settings = BenchmarkSettings(framework=framework)
 
         # Add input tensors to the payload if provided
         if input_tensors_id is not None:
-            data["input_tensors_id"] = input_tensors_id
+            benchmark_request.input_tensors_id = input_tensors_id
 
         # Submit all benchmarks at once
         response = self.http_client.post(
             f"/coreml/benchmark/enqueue?upload_id={model_id}",
-            data=data,
+            data=benchmark_request.model_dump(),
         )
 
         # Extract benchmark IDs from the response
