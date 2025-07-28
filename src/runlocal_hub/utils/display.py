@@ -2,15 +2,62 @@
 Display utilities for formatting benchmark results.
 """
 
-from typing import List, Union
+from typing import Any, Dict, List, Optional, Union
 
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
+from rich.table import Table
 from rich.text import Text
 
 from ..models.benchmark_result import BenchmarkResult
 from ..models.model import UploadDbItem
+
+
+def _format_versions(versions: Optional[Dict[str, str]]) -> str:
+    """
+    Format version dictionary into a readable string with newlines.
+
+    Args:
+        versions: Dictionary of version information
+
+    Returns:
+        Formatted string representation with each entry on a new line
+    """
+    if not versions:
+        return "N/A"
+
+    # Format as "key: value" pairs, one per line
+    pairs = [f"{k}: {v}" for k, v in versions.items()]
+    return "\n".join(pairs)
+
+
+def _format_settings(settings: Optional[Dict[str, Any]], indent: int = 0) -> str:
+    """
+    Format settings dictionary into a readable string with proper indentation.
+
+    Args:
+        settings: Dictionary of settings (can be nested)
+        indent: Current indentation level
+
+    Returns:
+        Formatted string representation with nested structure
+    """
+    if not settings:
+        return "N/A"
+
+    lines = []
+    indent_str = "  " * indent
+
+    for key, value in settings.items():
+        if isinstance(value, dict):
+            lines.append(f"{indent_str}{key}:")
+            lines.append(_format_settings(value, indent + 1))
+        elif isinstance(value, list):
+            lines.append(f"{indent_str}{key}: [{', '.join(str(v) for v in value)}]")
+        else:
+            lines.append(f"{indent_str}{key}: {value}")
+
+    return "\n".join(lines)
 
 
 def display_benchmark_results(
@@ -20,17 +67,21 @@ def display_benchmark_results(
     show_load_array: bool = False,
     show_ram_usage: bool = False,
     show_failed_benchmarks: bool = False,
+    show_versions: bool = False,
+    show_settings: bool = False,
 ):
     """
     Display benchmark results in a formatted table using rich.
 
     Args:
         results: List of benchmark results to display
-        show_average: Show average times instead of median
+        show_mean: Show average times instead of median
         show_inference_array: Show full inference time arrays
         show_load_array: Show full load time arrays
         show_ram_usage: Show RAM usage metrics
         show_failed_benchmarks: Show details about failed benchmarks
+        show_versions: Show version information from benchmarks
+        show_settings: Show settings information from benchmarks
     """
     console = Console()
 
@@ -47,6 +98,8 @@ def display_benchmark_results(
         show_inference_array,
         show_load_array,
         show_ram_usage,
+        show_versions,
+        show_settings,
         console,
     )
 
@@ -60,6 +113,8 @@ def _display_grouped_results(
     show_inference_array: bool,
     show_load_array: bool,
     show_ram_usage: bool,
+    show_versions: bool,
+    show_settings: bool,
     console: Console,
 ):
     """Display results grouped by device in a single table."""
@@ -95,6 +150,10 @@ def _display_grouped_results(
     if show_ram_usage:
         table.add_column("Peak Inference RAM (MB)", justify="right", style="blue")
         table.add_column("Peak Load RAM (MB)", justify="right", style="blue")
+    if show_versions:
+        table.add_column("Versions", style="dim")
+    if show_settings:
+        table.add_column("Settings", style="dim")
 
     # Process all results
     for result in results:
@@ -181,6 +240,12 @@ def _display_grouped_results(
                     else "N/A"
                 )
                 row.extend([inference_ram, load_ram])
+
+            if show_versions:
+                row.append(_format_versions(benchmark_data.Versions))
+
+            if show_settings:
+                row.append(_format_settings(benchmark_data.Settings))
 
             table.add_row(*row)
 
