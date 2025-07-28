@@ -3,54 +3,13 @@ Benchmark-related models.
 """
 
 from decimal import Decimal
-from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
-from runlocal_hub.models.job import JobType
-
 from .device import Device
-
-
-class Framework(str, Enum):
-    COREML = "CoreML"
-    ONNXRUNTIME = "ONNX Runtime"
-    OPENVINO = "OpenVINO"
-    TFLITE = "TFLite"
-    LLAMACPP = "LlamaCpp"
-
-
-class BenchmarkStatus(str, Enum):
-    """Status of a benchmark job."""
-
-    Pending = "Pending"  # not started, still in queue
-    Complete = "Complete"
-    Failed = "Failed"
-    Running = "Running"
-    Deleted = "Deleted"
-
-
-class BenchmarkSettings(BaseModel):
-    # Overwrite default framework (eg. use openvino for onnx model)
-    framework: Optional[Framework] = None
-    framework_settings: Optional[Dict[str, Any]] = None
-
-
-class DeviceBenchmarkRequest(BaseModel):
-    device_id: str
-    compute_units: Optional[List[str]] = None
-
-
-class BenchmarkRequest(BaseModel):
-    device_requests: List[DeviceBenchmarkRequest]
-    test_name: Optional[str] = None
-    user_id: Optional[str] = None
-    settings: Optional[BenchmarkSettings] = None
-    input_tensors_id: Optional[str] = None
-    job_type: JobType = (
-        JobType.BENCHMARK
-    )  # Default to benchmark for backward compatibility
+from .job import BenchmarkStatus
+from .settings import Framework
 
 
 class BenchmarkData(BaseModel):
