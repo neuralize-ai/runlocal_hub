@@ -12,3 +12,6 @@ class SpecializationStrategy(str, Enum):
 class CoreMLSettings(BaseModel):
     allowLowPrecisionAccumulationOnGPU: Optional[bool] = None
     specializationStrategy: Optional[SpecializationStrategy] = None
+
+    def format(self):
+        return {"CoreML": self.model_dump()}
