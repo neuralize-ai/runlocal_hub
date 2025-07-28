@@ -14,7 +14,10 @@ import numpy as np
 
 from runlocal_hub.models.benchmark import (
     BenchmarkDbItem,
+    BenchmarkRequest,
+    BenchmarkSettings,
     BenchmarkStatus,
+    Framework,
 )
 from runlocal_hub.models.model import UploadDbItem
 from runlocal_hub.utils.json import convert_to_json_friendly
@@ -375,6 +378,7 @@ class RunLocalClient:
         self,
         model_path: Optional[Union[Path, str]] = None,
         model_id: Optional[str] = None,
+        framework: Optional[Framework] = None,
         device_filters: Optional[Union[DeviceFilters, List[DeviceFilters]]] = None,
         inputs: Optional[Dict[str, np.ndarray]] = None,
         timeout: Optional[int] = 600,
@@ -390,6 +394,7 @@ class RunLocalClient:
         Args:
             model_path: Path to the model file or folder (if model_id not provided)
             model_id: ID of already uploaded model (if model_path not provided)
+            framework: Optional manual override of runtime framework
             device_filters: Optional filters for device selection. Can be a single DeviceFilters
                           object or a list of DeviceFilters to apply with OR logic (union)
             inputs: Optional dictionary mapping input names to numpy arrays
@@ -441,6 +446,7 @@ class RunLocalClient:
         user_models = self.get_models_ids()
         devices = self.device_selector.select_devices(
             model_id=model_id,
+            framework=framework,
             filters=device_filters,
             count=device_count,
             user_models=user_models,
@@ -453,6 +459,7 @@ class RunLocalClient:
         return self._run_benchmarks(
             model_id=model_id,
             devices=devices,
+            framework=framework,
             inputs=inputs,
             timeout=timeout,
             poll_interval=poll_interval,
@@ -549,6 +556,7 @@ class RunLocalClient:
         self,
         model_id: str,
         devices: List[DeviceUsage],
+        framework: Optional[Framework] = None,
         inputs: Optional[Dict[str, np.ndarray]] = None,
         timeout: Optional[int] = 600,
         poll_interval: int = 10,
