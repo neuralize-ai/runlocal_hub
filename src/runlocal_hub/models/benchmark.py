@@ -8,6 +8,8 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
+from runlocal_hub.models.job import JobType
+
 from .device import Device
 
 
@@ -46,6 +48,9 @@ class BenchmarkRequest(BaseModel):
     user_id: Optional[str] = None
     settings: Optional[BenchmarkSettings] = None
     input_tensors_id: Optional[str] = None
+    job_type: JobType = (
+        JobType.BENCHMARK
+    )  # Default to benchmark for backward compatibility
 
 
 class BenchmarkData(BaseModel):
