@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
-from .job import JobType
+from ..job import JobType
 
 
 class Framework(str, Enum):
