@@ -471,6 +471,7 @@ class RunLocalClient:
         inputs: Dict[str, np.ndarray],
         model_path: Optional[Union[Path, str]] = None,
         model_id: Optional[str] = None,
+        framework: Optional[Framework] = None,
         device_filters: Optional[Union[DeviceFilters, List[DeviceFilters]]] = None,
         timeout: Optional[int] = 600,
         poll_interval: int = 10,
@@ -485,6 +486,7 @@ class RunLocalClient:
             inputs: Dictionary mapping input names to numpy arrays
             model_path: Path to the model file or folder (if model_id not provided)
             model_id: ID of already uploaded model (if model_path not provided)
+            framework: Optional manual override of runtime framework
             device_filters: Optional filters for device selection. Can be a single DeviceFilters
                           object or a list of DeviceFilters to apply with OR logic (union)
             timeout: Maximum time in seconds to wait for completion
@@ -533,6 +535,7 @@ class RunLocalClient:
         user_models = self.get_models_ids()
         devices = self.device_selector.select_devices(
             model_id=model_id,
+            framework=framework,
             filters=device_filters,
             count=device_count,
             user_models=user_models,
@@ -545,6 +548,7 @@ class RunLocalClient:
         return self._run_predictions(
             model_id=model_id,
             devices=devices,
+            framework=framework,
             inputs=inputs,
             timeout=timeout,
             poll_interval=poll_interval,
@@ -698,6 +702,7 @@ class RunLocalClient:
         model_id: str,
         devices: List[DeviceUsage],
         inputs: Dict[str, np.ndarray],
+        framework: Optional[Framework] = None,
         timeout: Optional[int] = 600,
         poll_interval: int = 10,
         output_dir: Optional[Union[str, Path]] = None,
@@ -724,17 +729,19 @@ class RunLocalClient:
             }
             device_requests.append(device_request)
 
-        # Prepare the data payload for prediction jobs
-        data = {
-            "device_requests": device_requests,
-            "input_tensors_id": input_tensors_id,
-            "job_type": JobType.PREDICTION.value,
-        }
+        benchmark_request: BenchmarkRequest = BenchmarkRequest(
+            device_requests=device_requests,
+            input_tensors_id=input_tensors_id,
+            job_type=JobType.PREDICTION,
+        )
+
+        if framework is not None:
+            benchmark_request.settings = BenchmarkSettings(framework=framework)
 
         # Submit all prediction jobs at once
         response = self.http_client.post(
             f"/coreml/benchmark/enqueue?upload_id={model_id}",
-            data=data,
+            data=benchmark_request.model_dump(),
         )
 
         # Extract the benchmark IDs
