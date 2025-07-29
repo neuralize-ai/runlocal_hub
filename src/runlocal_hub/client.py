@@ -48,16 +48,16 @@ class RunLocalClient:
 
     def __init__(
         self,
-        debug: bool = False,
         local_server: bool = False,
+        verbosity: int = 2,
     ):
         """
         Initialize the RunLocal client.
 
         Args:
-            api_key: API key for authentication. If not provided, will look for RUNLOCAL_API_KEY env var
-            base_url: Base URL for the API. Defaults to production URL
-            debug: Enable debug logging
+            debug: Enable debug logging (deprecated, use verbosity=3 instead)
+            local_server: Use local server instead of production
+            verbosity: Control output verbosity (0=silent, 1=minimal, 2=normal 3=verbose, 4=debug). Uses instance default if not specified
         """
         api_key = os.environ.get(self.ENV_VAR_NAME)
         if not api_key:
@@ -70,11 +70,13 @@ class RunLocalClient:
         if local_server:
             self.BASE_URL = "http://127.0.0.1:8000"
 
+        # Store verbosity as instance variable
+        self.verbosity = verbosity
+
         # Initialize HTTP client
         self.http_client = HTTPClient(
-            base_url=self.BASE_URL, api_key=api_key, debug=debug
+            base_url=self.BASE_URL, api_key=api_key, debug=verbosity >= 4
         )
-        self.debug = debug
 
         # Initialize components
         self.device_selector = DeviceSelector(self.http_client)
@@ -211,7 +213,6 @@ class RunLocalClient:
         model_pipeline_id: Optional[str] = None,
         torchscript_upload_id: Optional[str] = None,
         keras_upload_id: Optional[str] = None,
-        show_progress: bool = True,
     ) -> str:
         """
         Upload a model file or folder to the RunLocal platform.
@@ -221,7 +222,6 @@ class RunLocalClient:
             model_pipeline_id: Optional model pipeline to link the model to
             torchscript_upload_id: Optional torchscript model to link the model to
             keras_upload_id: Optional tensorflow model to link the model to
-            show_progress: Whether to show progress bar
 
         Returns:
             Upload ID of the uploaded model
@@ -241,13 +241,13 @@ class RunLocalClient:
             temp_path = Path(temp_dir)
 
             # Zip the model
-            if self.debug:
+            if self.verbosity >= 4:
                 print(f"Zipping {model_path}...")
 
             zip_path = self._zip_path(model_path, temp_path)
             zip_size = zip_path.stat().st_size
 
-            if self.debug:
+            if self.verbosity >= 4:
                 print(
                     f"Zip file created: {zip_path.name} ({zip_size / 1024 / 1024:.2f} MB)"
                 )
@@ -271,7 +271,7 @@ class RunLocalClient:
             with open(zip_path, "rb") as f:
                 zip_data = f.read()
 
-            if self.debug:
+            if self.verbosity >= 4:
                 print("Uploading to server...")
 
             # Upload and process response
@@ -279,7 +279,6 @@ class RunLocalClient:
                 endpoint="/uploads/model/coreml",
                 data=zip_data,
                 params=params,
-                show_progress=show_progress,
             )
 
     def _zip_path(self, path: Path, temp_dir: Path) -> Path:
@@ -316,7 +315,6 @@ class RunLocalClient:
         endpoint: str,
         data: bytes,
         params: Dict,
-        show_progress: bool,
     ) -> str:
         """
         Process a streaming upload response.
@@ -325,7 +323,6 @@ class RunLocalClient:
             endpoint: API endpoint
             data: Binary data to upload
             params: Query parameters
-            show_progress: Whether to show progress bar
 
         Returns:
             Upload ID
@@ -337,7 +334,7 @@ class RunLocalClient:
         already_exists = False
         progress_bar = None
 
-        if show_progress:
+        if self.verbosity >= 2:
             progress_bar = tqdm(total=100, desc="Upload Progress", unit="%")
 
         try:
@@ -358,7 +355,7 @@ class RunLocalClient:
                     already_exists = message.get("already_exists", False)
 
                 # Print status messages
-                if "message" in message and not show_progress:
+                if "message" in message and self.verbosity >= 3:
                     print(f"Server: {message['message']}")
 
         finally:
@@ -368,10 +365,11 @@ class RunLocalClient:
         if not upload_id:
             raise UploadError("No upload ID received from server")
 
-        if already_exists:
-            print(f"Model already exists with upload_id: {upload_id}\n")
-        else:
-            print(f"Model uploaded successfully with upload_id: {upload_id}\n")
+        if self.verbosity >= 1:
+            if already_exists:
+                print(f"Model already exists with upload_id: {upload_id}\n")
+            else:
+                print(f"Model uploaded successfully with upload_id: {upload_id}\n")
 
         return upload_id
 
@@ -384,7 +382,6 @@ class RunLocalClient:
         inputs: Optional[Dict[str, np.ndarray]] = None,
         timeout: Optional[int] = 600,
         poll_interval: int = 10,
-        show_progress: bool = True,
         device_count: Optional[int] = 1,
         output_dir: Optional[Union[str, Path]] = None,
         skip_output_download: bool = False,
@@ -401,7 +398,6 @@ class RunLocalClient:
             inputs: Optional dictionary mapping input names to numpy arrays
             timeout: Maximum time in seconds to wait for completion
             poll_interval: Time in seconds between status checks
-            show_progress: Whether to show upload progress bar
             device_count: Number of devices to benchmark on (None = all, 1 = single result, >1 = list)
             output_dir: Directory to save output tensors (defaults to ./outputs/)
             skip_output_download: If True, skip downloading output tensors even if inputs are provided
@@ -433,15 +429,15 @@ class RunLocalClient:
 
         # Upload model if path provided
         if model_path is not None:
-            if self.debug:
+            if self.verbosity >= 4:
                 print(f"Uploading model from {model_path}...")
-            model_id = self.upload_model(model_path, show_progress=show_progress)
+            model_id = self.upload_model(model_path)
 
         if model_id is None:
             raise RunLocalError("Model upload failed")
 
         # Select devices using our device selector
-        if self.debug:
+        if self.verbosity >= 4:
             print("Selecting devices...")
 
         user_models = self.get_models_ids()
@@ -454,7 +450,8 @@ class RunLocalClient:
         )
 
         # Display selected devices
-        self.device_selector.display_selected_devices(devices)
+        if self.verbosity >= 2:
+            self.device_selector.display_selected_devices(devices)
 
         # Run benchmarks using our components
         return self._run_benchmarks(
@@ -477,7 +474,6 @@ class RunLocalClient:
         device_filters: Optional[Union[DeviceFilters, List[DeviceFilters]]] = None,
         timeout: Optional[int] = 600,
         poll_interval: int = 10,
-        show_progress: bool = True,
         device_count: Optional[int] = 1,
         output_dir: Optional[Union[str, Path]] = None,
     ) -> Union[PredictionResult, List[PredictionResult]]:
@@ -493,7 +489,6 @@ class RunLocalClient:
                           object or a list of DeviceFilters to apply with OR logic (union)
             timeout: Maximum time in seconds to wait for completion
             poll_interval: Time in seconds between status checks
-            show_progress: Whether to show upload progress bar
             device_count: Number of devices to run prediction on (None = all, 1 = single result, >1 = list)
             output_dir: Directory to save output tensors (defaults to ./outputs)
 
@@ -523,15 +518,15 @@ class RunLocalClient:
 
         # Upload model if path provided
         if model_path is not None:
-            if self.debug:
+            if self.verbosity >= 4:
                 print(f"Uploading model from {model_path}...")
-            model_id = self.upload_model(model_path, show_progress=show_progress)
+            model_id = self.upload_model(model_path)
 
         if model_id is None:
             raise RunLocalError("Model upload failed")
 
         # Select devices using our device selector
-        if self.debug:
+        if self.verbosity >= 4:
             print("Selecting devices...")
 
         user_models = self.get_models_ids()
@@ -544,7 +539,8 @@ class RunLocalClient:
         )
 
         # Display selected devices
-        self.device_selector.display_selected_devices(devices)
+        if self.verbosity >= 2:
+            self.device_selector.display_selected_devices(devices)
 
         # Run predictions using our components
         return self._run_predictions(
@@ -574,7 +570,7 @@ class RunLocalClient:
         # Upload input tensors if provided
         input_tensors_id = None
         if inputs is not None:
-            if self.debug:
+            if self.verbosity >= 4:
                 print("Uploading input tensors for benchmarks...")
                 for name, tensor in inputs.items():
                     print(f"  {name}: shape={tensor.shape}, dtype={tensor.dtype}")
@@ -610,7 +606,7 @@ class RunLocalClient:
         # Extract benchmark IDs from the response
         benchmark_ids = list(response)
 
-        if self.debug:
+        if self.verbosity >= 4:
             print(f"Benchmarks submitted with IDs: {benchmark_ids}")
 
         # Configure poller with custom interval
@@ -653,7 +649,7 @@ class RunLocalClient:
                             compute_unit = bd["ComputeUnit"]
                             output_tensors_id = bd["OutputTensorsId"]
 
-                            if self.debug:
+                            if self.verbosity >= 4:
                                 print(
                                     f"Downloading outputs for compute unit '{compute_unit}' (tensor ID: {output_tensors_id})"
                                 )
@@ -673,7 +669,7 @@ class RunLocalClient:
             else:
                 # Don't raise error for individual failures when we have partial results
                 # Just log the error and continue
-                if self.debug:
+                if self.verbosity >= 2:
                     print(
                         f"Warning: Benchmark failed for device {result.device_name}: {result.error}"
                     )
@@ -711,7 +707,7 @@ class RunLocalClient:
         Internal method to run predictions using refactored components.
         """
         # Upload input tensors (required for predictions)
-        if self.debug:
+        if self.verbosity >= 4:
             print("Uploading input tensors...")
             for name, tensor in inputs.items():
                 print(f"  {name}: shape={tensor.shape}, dtype={tensor.dtype}")
@@ -745,7 +741,7 @@ class RunLocalClient:
         # Extract the benchmark IDs
         benchmark_ids = list(response)
 
-        if self.debug:
+        if self.verbosity >= 4:
             print(f"Prediction jobs submitted with IDs: {benchmark_ids}")
 
         # Configure poller with custom interval
@@ -773,7 +769,7 @@ class RunLocalClient:
                         compute_unit = benchmark_data["ComputeUnit"]
                         output_tensors_id = benchmark_data["OutputTensorsId"]
 
-                        if self.debug:
+                        if self.verbosity >= 4:
                             print(
                                 f"Downloading outputs for compute unit '{compute_unit}' (tensor ID: {output_tensors_id})"
                             )
@@ -802,14 +798,14 @@ class RunLocalClient:
                     )
                     processed_results.append(prediction_result)
                 else:
-                    if self.debug:
+                    if self.verbosity >= 2:
                         print(
                             f"Warning: Prediction completed but no output tensors found for device {result.device_name}"
                         )
             else:
                 # Don't raise error for individual failures when we have partial results
                 # Just log the error and continue
-                if self.debug:
+                if self.verbosity >= 2:
                     print(
                         f"Warning: Prediction failed for device {result.device_name}: {result.error}"
                     )
