@@ -152,7 +152,7 @@ Check out the example scripts:
 | ONNX            | `.onnx`                     | Windows, MacOS  |
 | OpenVINO        | directory (`.xml` + `.bin`) | Windows (Intel) |
 | TensorFlow Lite | `.tflite`                   | Android         |
-| GGUF            | `.gguf`                     | All platforma   |
+| GGUF            | `.gguf`                     | All platforms   |
 
 More frameworks coming soon.
 

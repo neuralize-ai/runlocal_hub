@@ -414,8 +414,7 @@ class RunLocalClient:
 
             Use response.incomplete_job_ids to check for timed-out jobs
             Use client.check_multiple_jobs(response.incomplete_job_ids) to check status later
-            Use client.wait_for_jobs(response.incomplete_job_ids) to resume waiting
-            Use client.get_benchmark_results(job_ids) to process completed jobs
+            Use client.get_benchmark_results(job_ids, timeout=60) to wait and process jobs
 
         Raises:
             ValueError: If neither model_path nor model_id is provided
@@ -511,8 +510,7 @@ class RunLocalClient:
 
             Use response.incomplete_job_ids to check for timed-out jobs
             Use client.check_multiple_jobs(response.incomplete_job_ids) to check status later
-            Use client.wait_for_jobs(response.incomplete_job_ids) to resume waiting
-            Use client.get_prediction_results(job_ids) to process completed jobs
+            Use client.get_prediction_results(job_ids, timeout=60) to wait and process jobs
 
         Raises:
             ValueError: If neither model_path nor model_id is provided
@@ -924,10 +922,192 @@ class RunLocalClient:
 
         return processed_results
 
-            else:
-                raise RunLocalError(
-                    "No prediction results available - all jobs failed or timed out"
+    @handle_api_errors
+    def check_job_status(self, job_id: str) -> JobResult:
+        """
+        Check the status of a single job.
+
+        Args:
+            job_id: Job ID to check
+
+        Returns:
+            Current job status and data
+
+        Raises:
+            RunLocalError: If API request fails
+        """
+        return self.job_poller._check_job_status(job_id)
+
+    @handle_api_errors
+    def check_multiple_jobs(self, job_ids: List[str]) -> List[JobResult]:
+        """
+        Check the status of multiple jobs.
+
+        Args:
+            job_ids: List of job IDs to check
+
+        Returns:
+            List of current job statuses and data
+
+        Raises:
+            RunLocalError: If API request fails
+        """
+        results = []
+        for job_id in job_ids:
+            try:
+                result = self.job_poller._check_job_status(job_id)
+                results.append(result)
+            except Exception as e:
+                # Create a failed result for this job
+                result = JobResult(
+                    job_id=job_id, status=BenchmarkStatus.Failed, error=str(e)
                 )
-        else:
-            # For multiple devices, always return a list (could be empty or partial)
-            return processed_results
+                results.append(result)
+        return results
+
+    def get_benchmark_results(
+        self,
+        job_ids: List[str],
+        output_dir: Optional[Union[str, Path]] = None,
+        skip_output_download: bool = True,
+        timeout: Optional[int] = None,
+        poll_interval: int = 10,
+    ) -> BenchmarkResponse:
+        """
+        Get processed benchmark results from job IDs, optionally waiting for completion.
+
+        Args:
+            job_ids: List of job IDs to process
+            output_dir: Directory to save output tensors
+            skip_output_download: Skip downloading output tensors
+            timeout: Maximum time in seconds to wait for incomplete jobs
+            poll_interval: Time in seconds between status checks when waiting
+
+        Returns:
+            BenchmarkResponse containing:
+            - results: List[BenchmarkResult] with completed jobs
+            - all_job_ids: All job IDs that were checked
+            - completed_job_ids: Job IDs that completed successfully
+            - incomplete_job_ids: Job IDs that didn't complete (still running/failed)
+
+        Raises:
+            RunLocalError: If no jobs completed and timeout specified
+        """
+        if self.verbosity >= 4:
+            print(f"Waiting up to {timeout}s for jobs to complete...")
+
+        # Configure poller with custom interval
+        self.job_poller.poll_interval = poll_interval
+
+        # Poll for job completion
+        job_results = self.job_poller.poll_jobs(
+            job_ids=job_ids,
+            job_type=JobType.BENCHMARK,  # Assume benchmark jobs
+            timeout=timeout,
+        )
+
+        # Filter to only completed jobs
+        completed_results = [r for r in job_results if r.is_successful]
+
+        # Process the completed results
+        processed_results = self._process_benchmark_results(
+            completed_results,
+            output_dir=output_dir,
+            skip_output_download=skip_output_download,
+        )
+
+        # Collect job tracking information
+        completed_job_ids = [r.job_id for r in completed_results]
+        incomplete_job_ids = [
+            job_id for job_id in job_ids if job_id not in completed_job_ids
+        ]
+
+        # Check if we should raise error for no results (only if timeout was specified)
+        if not processed_results and timeout is not None:
+            incomplete_count = len([r for r in job_results if not r.is_complete])
+            failed_count = len([r for r in job_results if r.is_failed])
+
+            raise RunLocalError(
+                f"No completed benchmark results available after {timeout}s timeout. "
+                f"{incomplete_count} jobs still running, {failed_count} failed."
+            )
+
+        # Create and return response wrapper
+        return BenchmarkResponse(
+            results=processed_results,
+            all_job_ids=job_ids,
+            completed_job_ids=completed_job_ids,
+            incomplete_job_ids=incomplete_job_ids,
+        )
+
+    def get_prediction_results(
+        self,
+        job_ids: List[str],
+        output_dir: Optional[Union[str, Path]] = None,
+        timeout: Optional[int] = None,
+        poll_interval: int = 10,
+    ) -> PredictionResponse:
+        """
+        Get processed prediction results from job IDs, optionally waiting for completion.
+
+        Args:
+            job_ids: List of job IDs to process
+            output_dir: Directory to save output tensors
+            timeout: Maximum time in seconds to wait for incomplete jobs
+            poll_interval: Time in seconds between status checks when waiting
+
+        Returns:
+            PredictionResponse containing:
+            - results: List[PredictionResult] with completed jobs
+            - all_job_ids: All job IDs that were checked
+            - completed_job_ids: Job IDs that completed successfully
+            - incomplete_job_ids: Job IDs that didn't complete (still running/failed)
+
+        Raises:
+            RunLocalError: If no jobs completed and timeout specified
+        """
+        if self.verbosity >= 4:
+            print(f"Waiting up to {timeout}s for jobs to complete...")
+
+        # Configure poller with custom interval
+        self.job_poller.poll_interval = poll_interval
+
+        # Poll for job completion
+        job_results = self.job_poller.poll_jobs(
+            job_ids=job_ids,
+            job_type=JobType.PREDICTION,  # Assume prediction jobs
+            timeout=timeout,
+        )
+
+        # Filter to only completed jobs
+        completed_results = [r for r in job_results if r.is_successful]
+
+        # Process the completed results
+        processed_results = self._process_prediction_results(
+            completed_results,
+            output_dir=output_dir,
+        )
+
+        # Collect job tracking information
+        completed_job_ids = [r.job_id for r in completed_results]
+        incomplete_job_ids = [
+            job_id for job_id in job_ids if job_id not in completed_job_ids
+        ]
+
+        # Check if we should raise error for no results (only if timeout was specified)
+        if not processed_results and timeout is not None:
+            incomplete_count = len([r for r in job_results if not r.is_complete])
+            failed_count = len([r for r in job_results if r.is_failed])
+
+            raise RunLocalError(
+                f"No completed prediction results available after {timeout}s timeout. "
+                f"{incomplete_count} jobs still running, {failed_count} failed."
+            )
+
+        # Create and return response wrapper
+        return PredictionResponse(
+            results=processed_results,
+            all_job_ids=job_ids,
+            completed_job_ids=completed_job_ids,
+            incomplete_job_ids=incomplete_job_ids,
+        )
