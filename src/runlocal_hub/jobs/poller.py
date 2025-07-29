@@ -5,8 +5,6 @@ Job polling logic for async operations.
 import time
 from typing import Callable, List, Optional, Set
 
-from runlocal_hub.models.device import Device
-
 from ..http import HTTPClient
 from ..models import BenchmarkDbItem, BenchmarkStatus, JobResult, JobType
 from ..utils.console import JobStatusDisplay
@@ -38,7 +36,6 @@ class JobPoller:
         self,
         job_ids: List[str],
         job_type: JobType,
-        devices: Optional[List[Device]] = None,
         timeout: Optional[int] = 600,
         progress_callback: Optional[Callable[[JobResult], None]] = None,
     ) -> List[JobResult]:
@@ -48,7 +45,6 @@ class JobPoller:
         Args:
             job_ids: List of job IDs to poll
             job_type: Type of jobs being polled
-            device_names: Optional list of device names corresponding to job_ids
             timeout: Maximum time in seconds to wait for completion
             progress_callback: Optional callback function called when each job completes
 
@@ -73,20 +69,12 @@ class JobPoller:
         # Track all job states for display
         all_job_results: List[JobResult] = []
 
-        # Create device name mapping
-        device_map = {}
-        if devices is not None:
-            for i, job_id in enumerate(job_ids):
-                if i < len(devices):
-                    device_map[job_id] = devices[i]
-
         # Initialize job results for display
         for job_id in job_ids:
             all_job_results.append(
                 JobResult(
                     job_id=job_id,
                     status=BenchmarkStatus.Pending,
-                    device=device_map.get(job_id),
                 )
             )
 
@@ -104,14 +92,13 @@ class JobPoller:
                 elapsed = int(time.time() - start_time)
 
                 # Check each job
-                for i, job_id in enumerate(job_ids):
+                for job_id in job_ids:
                     if job_id in completed_ids:
                         continue
 
                     try:
                         result = self._check_job_status(
                             job_id=job_id,
-                            device=device_map.get(job_id),
                         )
 
                         # Update the job result in our tracking list
@@ -196,7 +183,6 @@ class JobPoller:
         self,
         job_id: str,
         job_type: JobType,
-        devices: Optional[List[Device]] = None,
         timeout: int = 600,
         progress_callback: Optional[Callable[[JobResult], None]] = None,
     ) -> Optional[JobResult]:
@@ -206,7 +192,6 @@ class JobPoller:
         Args:
             job_id: Job ID to poll
             job_type: Type of job being polled
-            device_name: Optional device name for logging
             timeout: Maximum time in seconds to wait for completion
             progress_callback: Optional callback function called when job completes
 
@@ -219,7 +204,6 @@ class JobPoller:
         results = self.poll_jobs(
             job_ids=[job_id],
             job_type=job_type,
-            devices=devices,
             timeout=timeout,
             progress_callback=progress_callback,
         )
@@ -230,7 +214,6 @@ class JobPoller:
     def _check_job_status(
         self,
         job_id: str,
-        device: Optional[Device] = None,
     ) -> Optional[JobResult]:
         """
         Check the status of a single job.
@@ -259,7 +242,7 @@ class JobPoller:
         return JobResult(
             job_id=job_id,
             status=benchmark.Status,
-            device=device,
+            device=benchmark.DeviceInfo,
             data=result_data,
             error=error,
         )

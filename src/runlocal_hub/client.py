@@ -14,8 +14,8 @@ from tqdm import tqdm
 from runlocal_hub.models import (
     BenchmarkDbItem,
     BenchmarkRequest,
-    RuntimeSettings,
     BenchmarkStatus,
+    RuntimeSettings,
 )
 from runlocal_hub.models.job import JobResult
 from runlocal_hub.models.model import UploadDbItem
@@ -28,14 +28,14 @@ from .jobs import JobPoller
 from .models import (
     BenchmarkData,
     BenchmarkDataFloat,
-    BenchmarkResult,
     BenchmarkResponse,
+    BenchmarkResult,
     Device,
     DeviceUsage,
     IOType,
     JobType,
-    PredictionResult,
     PredictionResponse,
+    PredictionResult,
 )
 from .tensors import TensorHandler
 from .utils.decorators import handle_api_errors
@@ -596,11 +596,9 @@ class RunLocalClient:
         self.job_poller.poll_interval = poll_interval
 
         # Poll for benchmark completion using our job poller
-        device_infos = [device.device for device in devices]
         results = self.job_poller.poll_jobs(
             job_ids=job_ids,
             job_type=JobType.BENCHMARK,
-            devices=device_infos,
             timeout=timeout,
         )
 
@@ -663,11 +661,9 @@ class RunLocalClient:
         self.job_poller.poll_interval = poll_interval
 
         # Poll for prediction completion using our job poller
-        device_infos = [device.device for device in devices]
         results = self.job_poller.poll_jobs(
             job_ids=job_ids,
             job_type=JobType.PREDICTION,
-            devices=device_infos,
             timeout=timeout,
         )
 
