@@ -581,15 +581,168 @@ class RunLocalClient:
         poll_interval: int = 10,
         output_dir: Optional[Union[str, Path]] = None,
         skip_output_download: bool = False,
-    ) -> Union[BenchmarkResult, List[BenchmarkResult]]:
+    ) -> BenchmarkResponse:
         """
         Internal method to run benchmarks using refactored components.
+        """
+        # Submit jobs using the new common method
+        job_ids = self._submit_jobs(
+            model_id=model_id,
+            devices=devices,
+            settings=settings,
+            inputs=inputs,
+            job_type=JobType.BENCHMARK,
+        )
+
+        # Configure poller with custom interval
+        self.job_poller.poll_interval = poll_interval
+
+        # Poll for benchmark completion using our job poller
+        device_infos = [device.device for device in devices]
+        results = self.job_poller.poll_jobs(
+            job_ids=job_ids,
+            job_type=JobType.BENCHMARK,
+            devices=device_infos,
+            timeout=timeout,
+        )
+
+        # Process results using the new common method
+        processed_results = self._process_benchmark_results(
+            results=results,
+            output_dir=output_dir,
+            skip_output_download=inputs is not None and not skip_output_download,
+        )
+
+        # Collect job tracking information
+        completed_job_ids = [result.job_id for result in results]
+        incomplete_job_ids = [
+            job_id for job_id in job_ids if job_id not in completed_job_ids
+        ]
+
+        # Check if we have at least some results
+        if not processed_results and len(results) < len(job_ids):
+            print(
+                f"\n⚠️  Warning: No benchmarks completed successfully. {len(job_ids) - len(results)} jobs timed out."
+            )
+            if incomplete_job_ids:
+                print(
+                    f"Use client.check_multiple_jobs({incomplete_job_ids}) to check their status later."
+                )
+
+        # Determine result format based on device count
+        if len(devices) == 1 and processed_results:
+            # For single device, return single result
+            result_data = processed_results[0]
+        else:
+            # For multiple devices, always return a list (could be empty or partial)
+            result_data = processed_results
+
+        # Create and return response wrapper
+        return BenchmarkResponse(
+            results=result_data,
+            all_job_ids=job_ids,
+            completed_job_ids=completed_job_ids,
+            incomplete_job_ids=incomplete_job_ids,
+        )
+
+    def _run_predictions(
+        self,
+        model_id: str,
+        devices: List[DeviceUsage],
+        inputs: Dict[str, np.ndarray],
+        settings: Optional[RuntimeSettings] = None,
+        timeout: Optional[int] = 600,
+        poll_interval: int = 10,
+        output_dir: Optional[Union[str, Path]] = None,
+    ) -> PredictionResponse:
+        """
+        Internal method to run predictions using refactored components.
+        """
+        # Submit jobs using the new common method
+        job_ids = self._submit_jobs(
+            model_id=model_id,
+            devices=devices,
+            settings=settings,
+            inputs=inputs,
+            job_type=JobType.PREDICTION,
+        )
+
+        # Configure poller with custom interval
+        self.job_poller.poll_interval = poll_interval
+
+        # Poll for prediction completion using our job poller
+        device_infos = [device.device for device in devices]
+        results = self.job_poller.poll_jobs(
+            job_ids=job_ids,
+            job_type=JobType.PREDICTION,
+            devices=device_infos,
+            timeout=timeout,
+        )
+
+        # Process results using the new common method
+        processed_results = self._process_prediction_results(
+            results=results,
+            output_dir=output_dir,
+        )
+
+        # Collect job tracking information
+        completed_job_ids = [result.job_id for result in results]
+        incomplete_job_ids = [
+            job_id for job_id in job_ids if job_id not in completed_job_ids
+        ]
+
+        # Check if we have at least some results
+        if not processed_results and len(results) < len(job_ids):
+            print(
+                f"\n⚠️  Warning: No predictions completed successfully. {len(job_ids) - len(results)} jobs timed out."
+            )
+            if incomplete_job_ids:
+                print(
+                    f"Use client.check_multiple_jobs({incomplete_job_ids}) to check their status later."
+                )
+
+        # Determine result format based on device count
+        if len(devices) == 1 and processed_results:
+            # For single device, return single result
+            result_data = processed_results[0]
+        else:
+            # For multiple devices, always return a list (could be empty or partial)
+            result_data = processed_results
+
+        # Create and return response wrapper
+        return PredictionResponse(
+            results=result_data,
+            all_job_ids=job_ids,
+            completed_job_ids=completed_job_ids,
+            incomplete_job_ids=incomplete_job_ids,
+        )
+
+    def _submit_jobs(
+        self,
+        model_id: str,
+        devices: List[DeviceUsage],
+        settings: Optional[RuntimeSettings] = None,
+        inputs: Optional[Dict[str, np.ndarray]] = None,
+        job_type: JobType = JobType.BENCHMARK,
+    ) -> List[str]:
+        """
+        Submit jobs to the API and return job IDs.
+
+        Args:
+            model_id: Model ID to run jobs on
+            devices: List of devices to run jobs on
+            settings: Optional runtime settings
+            inputs: Optional input tensors for the jobs
+            job_type: Type of job to submit (benchmark or prediction)
+
+        Returns:
+            List of job IDs that were submitted
         """
         # Upload input tensors if provided
         input_tensors_id = None
         if inputs is not None:
             if self.verbosity >= 4:
-                print("Uploading input tensors for benchmarks...")
+                print(f"Uploading input tensors for {job_type.value}...")
                 for name, tensor in inputs.items():
                     print(f"  {name}: shape={tensor.shape}, dtype={tensor.dtype}")
 
@@ -606,41 +759,50 @@ class RunLocalClient:
             }
             device_requests.append(device_request)
 
+        # Create benchmark request (works for both benchmarks and predictions)
         benchmark_request: BenchmarkRequest = BenchmarkRequest(
             device_requests=device_requests,
             settings=settings,
+            job_type=job_type,
         )
 
         # Add input tensors to the payload if provided
         if input_tensors_id is not None:
             benchmark_request.input_tensors_id = input_tensors_id
 
-        # Submit all benchmarks at once
+        # Submit all jobs at once
         response = self.http_client.post(
             f"/coreml/benchmark/enqueue?upload_id={model_id}",
             data=benchmark_request.model_dump(),
         )
 
-        # Extract benchmark IDs from the response
-        benchmark_ids = list(response)
+        # Extract job IDs from the response
+        job_ids = list(response)
 
         if self.verbosity >= 4:
-            print(f"Benchmarks submitted with IDs: {benchmark_ids}")
+            print(f"{job_type.value.title()}s submitted with IDs: {job_ids}")
 
-        # Configure poller with custom interval
-        self.job_poller.poll_interval = poll_interval
+        return job_ids
 
-        # Poll for benchmark completion using our job poller
-        device_infos = [device.device for device in devices]
-        results = self.job_poller.poll_jobs(
-            job_ids=benchmark_ids,
-            job_type=JobType.BENCHMARK,
-            devices=device_infos,
-            timeout=timeout,
-        )
+    def _process_benchmark_results(
+        self,
+        results: List[JobResult],
+        output_dir: Optional[Union[str, Path]] = None,
+        skip_output_download: bool = True,
+    ) -> List[BenchmarkResult]:
+        """
+        Process job results into benchmark results with tensor downloads.
 
-        # Process results and download output tensors if needed
+        Args:
+            results: List of job results from polling
+            output_dir: Directory to save output tensors
+            skip_output_download: Skip downloading output tensors
+
+        Returns:
+            List of processed benchmark results
+        """
         processed_results = []
+
         for result in results:
             if result.is_successful and result.data:
                 # Extract device info and benchmark data
@@ -658,9 +820,8 @@ class RunLocalClient:
                         BenchmarkDataFloat.from_benchmark_data(original_bd)
                     )
 
-                # Download output tensors if inputs were provided and skip_output_download is False
                 output_tensors = None
-                if inputs is not None and not skip_output_download:
+                if not skip_output_download:
                     output_tensors = {}
                     for bd in result.data["BenchmarkData"]:
                         if bd.get("Success") and bd.get("OutputTensorsId"):
@@ -685,97 +846,31 @@ class RunLocalClient:
                 )
                 processed_results.append(benchmark_result)
             else:
-                # Don't raise error for individual failures when we have partial results
-                # Just log the error and continue
+                # Log the error but don't include failed results
                 if self.verbosity >= 2:
                     print(
                         f"Warning: Benchmark failed for device {result.device_name}: {result.error}"
                     )
 
-        # Check if we have at least some results
-        if not processed_results and len(results) < len(benchmark_ids):
-            print(
-                f"\n⚠️  Warning: No benchmarks completed successfully. {len(benchmark_ids) - len(results)} jobs timed out."
-            )
+        return processed_results
 
-        # Return single result or list based on device count
-        if len(devices) == 1:
-            # For single device, return the result if available, otherwise raise error
-            if processed_results:
-                return processed_results[0]
-            else:
-                raise RunLocalError(
-                    "No benchmark results available - all jobs failed or timed out"
-                )
-        else:
-            # For multiple devices, always return a list (could be empty or partial)
-            return processed_results
-
-    def _run_predictions(
+    def _process_prediction_results(
         self,
-        model_id: str,
-        devices: List[DeviceUsage],
-        inputs: Dict[str, np.ndarray],
-        settings: Optional[RuntimeSettings] = None,
-        timeout: Optional[int] = 600,
-        poll_interval: int = 10,
+        results: List[JobResult],
         output_dir: Optional[Union[str, Path]] = None,
-    ) -> Union[PredictionResult, List[PredictionResult]]:
+    ) -> List[PredictionResult]:
         """
-        Internal method to run predictions using refactored components.
+        Process job results into prediction results with tensor downloads.
+
+        Args:
+            results: List of job results from polling
+            output_dir: Directory to save output tensors
+
+        Returns:
+            List of processed prediction results
         """
-        # Upload input tensors (required for predictions)
-        if self.verbosity >= 4:
-            print("Uploading input tensors...")
-            for name, tensor in inputs.items():
-                print(f"  {name}: shape={tensor.shape}, dtype={tensor.dtype}")
-
-        input_tensors_id = self.tensor_handler.upload_tensors(
-            inputs, io_type=IOType.INPUT
-        )
-
-        # Create device requests for all devices
-        device_requests = []
-        for device_usage in devices:
-            device_request = {
-                "device_id": device_usage.native_device_id,
-                "compute_units": device_usage.compute_units,
-            }
-            device_requests.append(device_request)
-
-        benchmark_request: BenchmarkRequest = BenchmarkRequest(
-            device_requests=device_requests,
-            settings=settings,
-            input_tensors_id=input_tensors_id,
-            job_type=JobType.PREDICTION,
-        )
-
-        # Submit all prediction jobs at once
-        response = self.http_client.post(
-            f"/coreml/benchmark/enqueue?upload_id={model_id}",
-            data=benchmark_request.model_dump(),
-        )
-
-        # Extract the benchmark IDs
-        benchmark_ids = list(response)
-
-        if self.verbosity >= 4:
-            print(f"Prediction jobs submitted with IDs: {benchmark_ids}")
-
-        # Configure poller with custom interval
-        self.job_poller.poll_interval = poll_interval
-
-        # Poll for prediction completion using our job poller
-        device_infos = [device.device for device in devices]
-        results = self.job_poller.poll_jobs(
-            job_ids=benchmark_ids,
-            job_type=JobType.PREDICTION,
-            devices=device_infos,
-            timeout=timeout,
-        )
-
-        # Process results and download output tensors
         processed_results = []
+
         for result in results:
             if result.is_successful and result.data is not None:
                 # Extract output tensor IDs from all compute units
@@ -821,24 +916,14 @@ class RunLocalClient:
                             f"Warning: Prediction completed but no output tensors found for device {result.device_name}"
                         )
             else:
-                # Don't raise error for individual failures when we have partial results
-                # Just log the error and continue
+                # Log the error but don't include failed results
                 if self.verbosity >= 2:
                     print(
                         f"Warning: Prediction failed for device {result.device_name}: {result.error}"
                     )
 
-        # Check if we have at least some results
-        if not processed_results and len(results) < len(benchmark_ids):
-            print(
-                f"\n⚠️  Warning: No predictions completed successfully. {len(benchmark_ids) - len(results)} jobs timed out."
-            )
+        return processed_results
 
-        # Return single result or list based on device count
-        if len(devices) == 1:
-            # For single device, return the result if available, otherwise raise error
-            if processed_results:
-                return processed_results[0]
             else:
                 raise RunLocalError(
                     "No prediction results available - all jobs failed or timed out"
