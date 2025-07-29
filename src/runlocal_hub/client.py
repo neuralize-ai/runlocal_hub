@@ -17,6 +17,7 @@ from runlocal_hub.models import (
     RuntimeSettings,
     BenchmarkStatus,
 )
+from runlocal_hub.models.job import JobResult
 from runlocal_hub.models.model import UploadDbItem
 from runlocal_hub.utils.json import convert_to_json_friendly
 
@@ -28,11 +29,13 @@ from .models import (
     BenchmarkData,
     BenchmarkDataFloat,
     BenchmarkResult,
+    BenchmarkResponse,
     Device,
     DeviceUsage,
     IOType,
     JobType,
     PredictionResult,
+    PredictionResponse,
 )
 from .tensors import TensorHandler
 from .utils.decorators import handle_api_errors
@@ -385,7 +388,7 @@ class RunLocalClient:
         device_count: Optional[int] = 1,
         output_dir: Optional[Union[str, Path]] = None,
         skip_output_download: bool = False,
-    ) -> Union[BenchmarkResult, List[BenchmarkResult]]:
+    ) -> BenchmarkResponse:
         """
         Benchmark a model with clean, user-friendly API.
 
@@ -403,9 +406,16 @@ class RunLocalClient:
             skip_output_download: If True, skip downloading output tensors even if inputs are provided
 
         Returns:
-            BenchmarkResult object(s) containing device info and performance data
-            (single BenchmarkResult if device_count=1, list of BenchmarkResult otherwise)
-            Output tensors are saved as file paths (unless skip_output_download=True)
+            BenchmarkResponse containing:
+            - results: BenchmarkResult object (single device) or List[BenchmarkResult] (multiple devices)
+            - all_job_ids: List of all submitted job IDs
+            - completed_job_ids: List of job IDs that completed
+            - incomplete_job_ids: List of job IDs that didn't complete within timeout
+
+            Use response.incomplete_job_ids to check for timed-out jobs
+            Use client.check_multiple_jobs(response.incomplete_job_ids) to check status later
+            Use client.wait_for_jobs(response.incomplete_job_ids) to resume waiting
+            Use client.get_benchmark_results(job_ids) to process completed jobs
 
         Raises:
             ValueError: If neither model_path nor model_id is provided
@@ -476,7 +486,7 @@ class RunLocalClient:
         poll_interval: int = 10,
         device_count: Optional[int] = 1,
         output_dir: Optional[Union[str, Path]] = None,
-    ) -> Union[PredictionResult, List[PredictionResult]]:
+    ) -> PredictionResponse:
         """
         Run prediction on a model with clean, user-friendly API.
 
@@ -493,8 +503,16 @@ class RunLocalClient:
             output_dir: Directory to save output tensors (defaults to ./outputs)
 
         Returns:
-            PredictionResult object(s) containing device info and output tensor file paths
-            (single PredictionResult if device_count=1, list of PredictionResult otherwise)
+            PredictionResponse containing:
+            - results: PredictionResult object (single device) or List[PredictionResult] (multiple devices)
+            - all_job_ids: List of all submitted job IDs
+            - completed_job_ids: List of job IDs that completed
+            - incomplete_job_ids: List of job IDs that didn't complete within timeout
+
+            Use response.incomplete_job_ids to check for timed-out jobs
+            Use client.check_multiple_jobs(response.incomplete_job_ids) to check status later
+            Use client.wait_for_jobs(response.incomplete_job_ids) to resume waiting
+            Use client.get_prediction_results(job_ids) to process completed jobs
 
         Raises:
             ValueError: If neither model_path nor model_id is provided
