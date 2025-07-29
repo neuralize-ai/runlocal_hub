@@ -4,6 +4,7 @@ from typing import Any, Dict, Iterator, Optional, Union
 import requests
 
 from ..exceptions import APIError, AuthenticationError
+from ..utils.decorators import with_retry
 
 
 class HTTPClient:
@@ -11,7 +12,12 @@ class HTTPClient:
     HTTP client for making API requests with authentication and error handling.
     """
 
-    def __init__(self, base_url: str, api_key: str, debug: bool = False):
+    def __init__(
+        self,
+        base_url: str,
+        api_key: str,
+        debug: bool = False,
+    ):
         """
         Initialize the HTTP client.
 
@@ -19,12 +25,15 @@ class HTTPClient:
             base_url: Base URL for the API
             api_key: API key for authentication
             debug: Enable debug logging
+            max_retries: Maximum number of retry attempts (default: from env or 3)
+            retry_delay: Base delay between retries in seconds (default: from env or 1.0)
         """
         self.base_url = base_url
         self.api_key = api_key
         self.headers = {"X-API-KEY": api_key}
         self.debug = debug
 
+    @with_retry()
     def request(
         self,
         method: str,
@@ -64,68 +73,62 @@ class HTTPClient:
             if data and not isinstance(data, bytes):
                 print(f"Data: {json.dumps(data, indent=2)}")
 
-        try:
-            if isinstance(data, bytes):
-                # For binary data (like file uploads)
-                response = requests.request(
-                    method=method,
-                    url=url,
-                    headers=headers,
-                    data=data,
-                    params=params,
-                    stream=stream,
-                )
-            else:
-                # For JSON data
-                response = requests.request(
-                    method=method,
-                    url=url,
-                    headers=headers,
-                    json=data,
-                    params=params,
-                    stream=stream,
-                )
+        if isinstance(data, bytes):
+            # For binary data (like file uploads)
+            response = requests.request(
+                method=method,
+                url=url,
+                headers=headers,
+                data=data,
+                params=params,
+                stream=stream,
+            )
+        else:
+            # For JSON data
+            response = requests.request(
+                method=method,
+                url=url,
+                headers=headers,
+                json=data,
+                params=params,
+                stream=stream,
+            )
 
-            if self.debug:
-                print(f"Response status: {response.status_code}")
-                if not stream:
-                    print(f"Response headers: {dict(response.headers)}")
-                    try:
-                        print(f"Response body: {json.dumps(response.json(), indent=2)}")
-                    except:
-                        print(f"Response body: {response.text}")
-
-            # Check for errors
-            if response.status_code >= 400:
-                error_msg = f"API request failed with status {response.status_code}"
+        if self.debug:
+            print(f"Response status: {response.status_code}")
+            if not stream:
+                print(f"Response headers: {dict(response.headers)}")
                 try:
-                    error_data = response.json()
-                    if "detail" in error_data:
-                        error_msg = f"{error_msg}: {error_data['detail']}"
+                    print(f"Response body: {json.dumps(response.json(), indent=2)}")
                 except:
-                    if response.text:
-                        error_msg = f"{error_msg}: {response.text}"
+                    print(f"Response body: {response.text}")
 
-                # Raise specific exceptions based on status code
-                if response.status_code == 401:
-                    raise AuthenticationError("Invalid API key or unauthorized access")
-                else:
-                    raise APIError(error_msg, status_code=response.status_code)
-
-            # Return streaming response as-is
-            if stream:
-                return response
-
-            # Return JSON response, or text if not JSON
+        # Check for errors
+        if response.status_code >= 400:
+            error_msg = f"API request failed with status {response.status_code}"
             try:
-                return response.json()
+                error_data = response.json()
+                if "detail" in error_data:
+                    error_msg = f"{error_msg}: {error_data['detail']}"
             except:
-                return {"text": response.text}
+                if response.text:
+                    error_msg = f"{error_msg}: {response.text}"
 
-        except requests.exceptions.RequestException as e:
-            if self.debug:
-                print(f"Request exception: {str(e)}")
-            raise Exception(f"Request failed: {str(e)}")
+            # Raise specific exceptions based on status code
+            if response.status_code == 401:
+                raise AuthenticationError("Invalid API key or unauthorized access")
+            else:
+                raise APIError(error_msg, status_code=response.status_code)
+
+        # Return streaming response as-is
+        if stream:
+            return response
+
+        # Return JSON response, or text if not JSON
+        try:
+            return response.json()
+        except:
+            return {"text": response.text}
 
     def get(self, endpoint: str, params: Optional[Dict] = None) -> Dict:
         """
@@ -159,6 +162,7 @@ class HTTPClient:
         """
         return self.request("POST", endpoint, data=data, params=params)
 
+    @with_retry()
     def post_streaming(
         self, endpoint: str, data: bytes, params: Optional[Dict] = None
     ) -> Iterator[Dict]:
@@ -203,6 +207,7 @@ class HTTPClient:
                             print(f"Failed to parse SSE message: {line_str}")
                         continue
 
+    @with_retry()
     def post_file(
         self,
         endpoint: str,
@@ -228,30 +233,27 @@ class HTTPClient:
             if params:
                 print(f"Params: {params}")
 
-        try:
-            response = requests.post(
-                url,
-                params=params,
-                files=files,
-                headers=self.headers,
+        response = requests.post(
+            url,
+            params=params,
+            files=files,
+            headers=self.headers,
+        )
+
+        if response.status_code != 200:
+            error_detail = response.text
+            try:
+                error_json = response.json()
+                error_detail = error_json.get("detail", response.text)
+            except:
+                pass
+            raise Exception(
+                f"File upload failed with status {response.status_code}: {error_detail}"
             )
 
-            if response.status_code != 200:
-                error_detail = response.text
-                try:
-                    error_json = response.json()
-                    error_detail = error_json.get("detail", response.text)
-                except:
-                    pass
-                raise Exception(
-                    f"File upload failed with status {response.status_code}: {error_detail}"
-                )
+        return response.json()
 
-            return response.json()
-
-        except requests.exceptions.RequestException as e:
-            raise Exception(f"Network error during file upload: {str(e)}")
-
+    @with_retry()
     def download_binary(self, endpoint: str) -> bytes:
         """
         Download binary data from an endpoint.
@@ -267,25 +269,22 @@ class HTTPClient:
         """
         url = f"{self.base_url}{endpoint}"
 
-        try:
-            response = requests.get(url, headers=self.headers)
+        response = requests.get(url, headers=self.headers)
 
-            if response.status_code != 200:
-                error_detail = response.text
-                try:
-                    error_json = response.json()
-                    error_detail = error_json.get("detail", response.text)
-                except:
-                    pass
-                raise Exception(
-                    f"Download failed with status {response.status_code}: {error_detail}"
-                )
+        if response.status_code != 200:
+            error_detail = response.text
+            try:
+                error_json = response.json()
+                error_detail = error_json.get("detail", response.text)
+            except:
+                pass
+            raise Exception(
+                f"Download failed with status {response.status_code}: {error_detail}"
+            )
 
-            return response.content
+        return response.content
 
-        except requests.exceptions.RequestException as e:
-            raise Exception(f"Network error during download: {str(e)}")
-
+    @with_retry()
     def download_from_url(self, url: str) -> bytes:
         """
         Download binary data from a presigned URL.
@@ -299,17 +298,13 @@ class HTTPClient:
         Raises:
             Exception: For download errors
         """
-        try:
-            # Don't send authentication headers for presigned URLs
-            response = requests.get(url)
+        # Don't send authentication headers for presigned URLs
+        response = requests.get(url)
 
-            if response.status_code != 200:
-                error_detail = response.text
-                raise Exception(
-                    f"Download failed with status {response.status_code}: {error_detail}"
-                )
+        if response.status_code != 200:
+            error_detail = response.text
+            raise Exception(
+                f"Download failed with status {response.status_code}: {error_detail}"
+            )
 
-            return response.content
-
-        except requests.exceptions.RequestException as e:
-            raise Exception(f"Network error during download: {str(e)}")
+        return response.content
