@@ -627,17 +627,11 @@ class RunLocalClient:
                     f"Use client.check_multiple_jobs({incomplete_job_ids}) to check their status later."
                 )
 
-        # Determine result format based on device count
-        if len(devices) == 1 and processed_results:
-            # For single device, return single result
-            result_data = processed_results[0]
-        else:
-            # For multiple devices, always return a list (could be empty or partial)
-            result_data = processed_results
-
         # Create and return response wrapper
         return BenchmarkResponse(
-            results=result_data,
+            results=processed_results[0]
+            if processed_results and len(processed_results) == 1
+            else processed_results,
             all_job_ids=job_ids,
             completed_job_ids=completed_job_ids,
             incomplete_job_ids=incomplete_job_ids,
@@ -699,17 +693,11 @@ class RunLocalClient:
                     f"Use client.check_multiple_jobs({incomplete_job_ids}) to check their status later."
                 )
 
-        # Determine result format based on device count
-        if len(devices) == 1 and processed_results:
-            # For single device, return single result
-            result_data = processed_results[0]
-        else:
-            # For multiple devices, always return a list (could be empty or partial)
-            result_data = processed_results
-
         # Create and return response wrapper
         return PredictionResponse(
-            results=result_data,
+            results=processed_results[0]
+            if processed_results and len(processed_results) == 1
+            else processed_results,
             all_job_ids=job_ids,
             completed_job_ids=completed_job_ids,
             incomplete_job_ids=incomplete_job_ids,
@@ -1022,16 +1010,6 @@ class RunLocalClient:
             job_id for job_id in job_ids if job_id not in completed_job_ids
         ]
 
-        # Check if we should raise error for no results (only if timeout was specified)
-        if not processed_results and timeout is not None:
-            incomplete_count = len([r for r in job_results if not r.is_complete])
-            failed_count = len([r for r in job_results if r.is_failed])
-
-            raise RunLocalError(
-                f"No completed benchmark results available after {timeout}s timeout. "
-                f"{incomplete_count} jobs still running, {failed_count} failed."
-            )
-
         # Create and return response wrapper
         return BenchmarkResponse(
             results=processed_results,
@@ -1093,16 +1071,6 @@ class RunLocalClient:
         incomplete_job_ids = [
             job_id for job_id in job_ids if job_id not in completed_job_ids
         ]
-
-        # Check if we should raise error for no results (only if timeout was specified)
-        if not processed_results and timeout is not None:
-            incomplete_count = len([r for r in job_results if not r.is_complete])
-            failed_count = len([r for r in job_results if r.is_failed])
-
-            raise RunLocalError(
-                f"No completed prediction results available after {timeout}s timeout. "
-                f"{incomplete_count} jobs still running, {failed_count} failed."
-            )
 
         # Create and return response wrapper
         return PredictionResponse(
