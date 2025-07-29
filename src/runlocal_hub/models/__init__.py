@@ -8,6 +8,7 @@ from .device import Device, DeviceUsage
 from .job import JobResult, JobType, BenchmarkStatus
 from .model import LicenseInfo, UploadDbItem, UploadedModelType
 from .prediction import PredictionResult
+from .responses import BenchmarkResponse, PredictionResponse
 from .settings import Framework, RuntimeSettings, BenchmarkRequest
 from .tensor import IOTensorsMetadata, IOTensorsPresignedUrlResponse, IOType, TensorInfo
 
@@ -19,6 +20,7 @@ __all__ = [
     "BenchmarkDataFloat",
     "BenchmarkDbItem",
     "BenchmarkResult",
+    "BenchmarkResponse",
     "RuntimeSettings",
     "BenchmarkRequest",
     "Framework",
@@ -29,6 +31,7 @@ __all__ = [
     "JobResult",
     "JobType",
     "PredictionResult",
+    "PredictionResponse",
     "UploadDbItem",
     "UploadedModelType",
     "LicenseInfo",

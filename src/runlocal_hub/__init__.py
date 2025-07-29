@@ -18,6 +18,8 @@ from .exceptions import (
 )
 from .models import (
     BenchmarkData,
+    BenchmarkResponse,
+    BenchmarkResult,
     BenchmarkStatus,
     Framework,
     Device,
@@ -25,6 +27,8 @@ from .models import (
     JobResult,
     JobType,
     IOType,
+    PredictionResponse,
+    PredictionResult,
     TensorInfo,
     RuntimeSettings,
 )
@@ -45,7 +49,11 @@ __all__ = [
     "IOType",
     "TensorInfo",
     "BenchmarkData",
+    "BenchmarkResult",
+    "BenchmarkResponse",
     "BenchmarkStatus",
+    "PredictionResult",
+    "PredictionResponse",
     "RuntimeSettings",
     "Framework",
     "RunLocalError",
