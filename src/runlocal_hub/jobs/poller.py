@@ -19,16 +19,20 @@ class JobPoller:
     Handles polling of async jobs until completion.
     """
 
-    def __init__(self, http_client: HTTPClient, poll_interval: int = 10):
+    def __init__(
+        self, http_client: HTTPClient, poll_interval: int = 10, verbosity: int = 2
+    ):
         """
         Initialize the job poller.
 
         Args:
             http_client: HTTP client for API requests
             poll_interval: Time in seconds between status checks
+            verbosity: Control output verbosity (0=silent, 1=minimal, 2=normal, 3=verbose, 4=debug)
         """
         self.http_client = http_client
         self.poll_interval = poll_interval
+        self.verbosity = verbosity
 
     def poll_jobs(
         self,
@@ -57,8 +61,10 @@ class JobPoller:
         if not job_ids:
             return []
 
-        # Initialize rich console display
-        display = JobStatusDisplay()
+        # Initialize display based on verbosity
+        display = None
+        if self.verbosity >= 2:
+            display = JobStatusDisplay()
 
         start_time = time.time()
         results: List[JobResult] = []
@@ -84,8 +90,13 @@ class JobPoller:
                 )
             )
 
-        # Start live display
-        display.start_live_display(all_job_results, job_type, 0)
+        # Start appropriate display based on verbosity level
+        if display:
+            # Full table display for verbosity >= 2
+            display.start_live_display(all_job_results, job_type, 0)
+        elif self.verbosity == 1:
+            # Simple progress display for verbosity == 1
+            self._print_simple_progress(len(completed_ids), len(job_ids), 0)
 
         try:
             while self._should_continue(start_time, timeout, completed_ids, job_ids):
@@ -128,12 +139,20 @@ class JobPoller:
                                 all_job_results[j].status = BenchmarkStatus.Failed
                                 all_job_results[j].error = str(e)
                                 break
-                        display.print_error(
-                            f"Error checking {job_type.value} {job_id}: {e}"
-                        )
+                        if display:
+                            display.print_error(
+                                f"Error checking {job_type.value} {job_id}: {e}"
+                            )
 
-                # Update display with current status
-                display.update_display(all_job_results, job_type, elapsed)
+                # Update display with current status based on verbosity
+                if display:
+                    # Full table display
+                    display.update_display(all_job_results, job_type, elapsed)
+                elif self.verbosity == 1:
+                    # Simple progress display (overwrite previous line)
+                    self._print_simple_progress(
+                        len(completed_ids), len(job_ids), elapsed
+                    )
 
                 # Break if all jobs complete
                 if len(completed_ids) == len(job_ids):
@@ -143,17 +162,27 @@ class JobPoller:
                 time.sleep(self.poll_interval)
 
         finally:
-            # Stop the live display
-            display.stop_display()
+            # Stop the live display if it was started
+            if display:
+                display.stop_display()
+            elif self.verbosity == 1:
+                # Print a final newline for simple progress
+                print()
 
         # Check for timeout - but still return partial results
         if len(completed_ids) < len(job_ids):
             incomplete_count = len(job_ids) - len(completed_ids)
             # Print warning about incomplete results
-            display.print_warning(
-                f"⚠️  Timeout: Only {len(completed_ids)}/{len(job_ids)} {job_type.value}s "
-                f"completed within {timeout}s. {incomplete_count} still running."
-            )
+            if display:
+                display.print_warning(
+                    f"⚠️  Timeout: Only {len(completed_ids)}/{len(job_ids)} {job_type.value}s "
+                    f"completed within {timeout}s. {incomplete_count} still running."
+                )
+            elif self.verbosity == 1:
+                print(
+                    f"⚠️  Timeout: Only {len(completed_ids)}/{len(job_ids)} {job_type.value}s "
+                    f"completed within {timeout}s. {incomplete_count} still running."
+                )
 
             # Mark incomplete jobs as timed out in all_job_results
             for job_result in all_job_results:
@@ -282,6 +311,24 @@ class JobPoller:
                 return data.FailureError
 
         return "Unknown failure"
+
+    def _print_simple_progress(self, completed: int, total: int, elapsed: int) -> None:
+        """
+        Print simple progress display for verbosity level 1.
+
+        Args:
+            completed: Number of completed jobs
+            total: Total number of jobs
+            elapsed: Elapsed time in seconds
+        """
+        fraction = f"{completed}/{total}"
+        elapsed_str = f"{elapsed}s"
+        # Use carriage return to overwrite the same line
+        print(
+            f"\rProgress: {fraction} completed, elapsed: {elapsed_str}",
+            end="",
+            flush=True,
+        )
 
 
 class ProgressTracker:

@@ -81,7 +81,7 @@ class RunLocalClient:
         # Initialize components
         self.device_selector = DeviceSelector(self.http_client)
         self.tensor_handler = TensorHandler(self.http_client)
-        self.job_poller = JobPoller(self.http_client)
+        self.job_poller = JobPoller(self.http_client, verbosity=self.verbosity)
 
     @handle_api_errors
     def health_check(self) -> Dict:
