@@ -19,6 +19,7 @@ from runlocal_hub.models import (
 )
 from runlocal_hub.models.job import JobResult
 from runlocal_hub.models.model import UploadDbItem
+from runlocal_hub.utils.display import display_incomplete_panel
 from runlocal_hub.utils.json import convert_to_json_friendly
 
 from .devices import DeviceFilters, DeviceSelector
@@ -620,15 +621,8 @@ class RunLocalClient:
             job_id for job_id in job_ids if job_id not in completed_job_ids
         ]
 
-        # Check if we have at least some results
-        if not processed_results and len(results) < len(job_ids):
-            print(
-                f"\n⚠️  Warning: No benchmarks completed successfully. {len(job_ids) - len(results)} jobs timed out."
-            )
-            if incomplete_job_ids:
-                print(
-                    f"Use client.check_multiple_jobs({incomplete_job_ids}) to check their status later."
-                )
+        if incomplete_job_ids:
+            self._print_incomplete_message(incomplete_job_ids)
 
         # Create and return response wrapper
         return BenchmarkResponse(
@@ -684,15 +678,10 @@ class RunLocalClient:
             job_id for job_id in job_ids if job_id not in completed_job_ids
         ]
 
-        # Check if we have at least some results
-        if not processed_results and len(results) < len(job_ids):
-            print(
-                f"\n⚠️  Warning: No predictions completed successfully. {len(job_ids) - len(results)} jobs timed out."
+        if incomplete_job_ids:
+            self._print_incomplete_message(
+                incomplete_job_ids, job_type=JobType.PREDICTION
             )
-            if incomplete_job_ids:
-                print(
-                    f"Use client.check_multiple_jobs({incomplete_job_ids}) to check their status later."
-                )
 
         # Create and return response wrapper
         return PredictionResponse(
@@ -903,6 +892,16 @@ class RunLocalClient:
 
         return processed_results
 
+    def _print_incomplete_message(
+        self, incomplete_job_ids: List[str], job_type: JobType = JobType.BENCHMARK
+    ):
+        if self.verbosity >= 2:
+            display_incomplete_panel(incomplete_job_ids, job_type.value)
+        elif self.verbosity == 1:
+            print(
+                f"Some jobs did not complete within the timeout: {incomplete_job_ids}.\nThey are accessible with response.incomplete_job_ids"
+            )
+
     @handle_api_errors
     def check_job_status(self, job_id: str) -> JobResult:
         """
@@ -1003,6 +1002,9 @@ class RunLocalClient:
             job_id for job_id in job_ids if job_id not in completed_job_ids
         ]
 
+        if incomplete_job_ids:
+            self._print_incomplete_message(incomplete_job_ids)
+
         # Create and return response wrapper
         return BenchmarkResponse(
             results=processed_results,
@@ -1064,6 +1066,11 @@ class RunLocalClient:
         incomplete_job_ids = [
             job_id for job_id in job_ids if job_id not in completed_job_ids
         ]
+
+        if incomplete_job_ids:
+            self._print_incomplete_message(
+                incomplete_job_ids, job_type=JobType.PREDICTION
+            )
 
         # Create and return response wrapper
         return PredictionResponse(

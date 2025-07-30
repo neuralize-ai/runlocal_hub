@@ -351,3 +351,37 @@ def display_model(model: UploadDbItem):
     )
 
     console.print(panel)
+
+
+def display_incomplete_panel(incomplete_job_ids, job_type: str):
+    console = Console()
+
+    content = Text()
+    content.append(
+        "Some jobs didn't complete within the timeout.\n", style="bold yellow"
+    )
+    content.append("You can access the results later:\n\n")
+
+    content.append("• Using the web client:\n", style="bold cyan")
+    content.append("\tCheck the benchmark table on the model's page.\n\n")
+
+    content.append("• Checking job status:\n", style="bold cyan")
+    content.append(f"\tclient.check_multiple_jobs({incomplete_job_ids})\n\n")
+
+    content.append("• Resuming polling:\n", style="bold cyan")
+    content.append(
+        f"\tclient.get_{job_type}_results({incomplete_job_ids}, timeout=...)\n",
+    )
+    content.append(
+        "\nYou can use response.incomplete_job_ids to automate this behaviour"
+    )
+
+    panel = Panel(
+        content,
+        title="[bold yellow]⚠️  Incomplete Jobs[/bold yellow]",
+        border_style="yellow",
+        expand=False,
+        padding=(1, 2),
+    )
+
+    console.print(panel)

@@ -146,7 +146,9 @@ class JobPoller:
                     break
 
                 # Check if we should continue before sleeping
-                if not self._should_continue(start_time, timeout, completed_ids, job_ids):
+                if not self._should_continue(
+                    start_time, timeout, completed_ids, job_ids
+                ):
                     break
 
                 # Wait before checking again
@@ -159,27 +161,6 @@ class JobPoller:
             elif self.verbosity == 1:
                 # Print a final newline for simple progress
                 print()
-
-        # Check for timeout - but still return partial results
-        if len(completed_ids) < len(job_ids):
-            incomplete_count = len(job_ids) - len(completed_ids)
-            # Print warning about incomplete results
-            if display:
-                display.print_warning(
-                    f"⚠️  Timeout: Only {len(completed_ids)}/{len(job_ids)} {job_type.value}s "
-                    f"completed within {timeout}s. {incomplete_count} still running."
-                )
-            elif self.verbosity == 1:
-                print(
-                    f"⚠️  Timeout: Only {len(completed_ids)}/{len(job_ids)} {job_type.value}s "
-                    f"completed within {timeout}s. {incomplete_count} still running."
-                )
-
-            # Mark incomplete jobs as timed out in all_job_results
-            for job_result in all_job_results:
-                if job_result.job_id not in completed_ids:
-                    job_result.status = BenchmarkStatus.Running
-                    job_result.error = f"Timed out after {timeout}s"
 
         return results
 
