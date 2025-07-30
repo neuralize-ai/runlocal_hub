@@ -34,6 +34,7 @@ class BenchmarkRequest(BaseModel):
     job_type: JobType = (
         JobType.BENCHMARK
     )  # Default to benchmark for backward compatibility
+    skip_existing: bool = False  # Skip benchmarks that have already been run
 
 
 class NumThreads(str, Enum):
