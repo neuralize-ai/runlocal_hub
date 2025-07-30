@@ -16,45 +16,41 @@ def main():
         device_name="MacBook",  # Filter by device name
     )
 
-    try:
-        response = client.predict(
-            inputs=inputs,
-            model_path=model_path,
-            device_filters=device_filters,
-            timeout=None,
-        )
+    response = client.predict(
+        inputs=inputs,
+        model_path=model_path,
+        device_filters=device_filters,
+        timeout=None,
+    )
 
-        # Extract result from response
-        result = (
-            response.results if isinstance(response.results, list) else response.results
-        )
-        if isinstance(result, list):
-            result = result[0]
+    # Extract result from response
+    result = (
+        response.results if isinstance(response.results, list) else response.results
+    )
+    if isinstance(result, list):
+        result = result[0]
 
-        print("Prediction Results:")
-        print(
-            f"\nDevice: {result.device.Name} ({result.device.Soc}, {result.device.Ram}GB RAM)"
-        )
-        print(f"Job ID: {result.job_id}")
-        print(f"Status: {result.status}")
+    print("Prediction Results:")
+    print(
+        f"\nDevice: {result.device.Name} ({result.device.Soc}, {result.device.Ram}GB RAM)"
+    )
+    print(f"Job ID: {result.job_id}")
+    print(f"Status: {result.status}")
 
-        for compute_unit, output_tensors in result.outputs.items():
-            print(f"\nOutputs for compute unit '{compute_unit}':")
-            # Note: normally, you would postprocess the model outputs here
-            for name, path in output_tensors.items():
-                print(f"  {name}: {path}")
+    for compute_unit, output_tensors in result.outputs.items():
+        print(f"\nOutputs for compute unit '{compute_unit}':")
+        # Note: normally, you would postprocess the model outputs here
+        for name, path in output_tensors.items():
+            print(f"  {name}: {path}")
 
-                # Load and show tensor info
-                tensor = np.load(path)
-                print(f"    shape={tensor.shape}, dtype={tensor.dtype}")
-                # Print first few values for small tensors
-                if tensor.size <= 10:
-                    print(f"    values: {tensor.flatten()}")
-                else:
-                    print(f"    values: {tensor.flatten()[:5]}... (showing first 5)")
-
-    except Exception as e:
-        print(f"Prediction failed: {type(e).__name__}: {e}")
+            # Load and show tensor info
+            tensor = np.load(path)
+            print(f"    shape={tensor.shape}, dtype={tensor.dtype}")
+            # Print first few values for small tensors
+            if tensor.size <= 10:
+                print(f"    values: {tensor.flatten()}")
+            else:
+                print(f"    values: {tensor.flatten()[:5]}... (showing first 5)")
 
 
 if __name__ == "__main__":

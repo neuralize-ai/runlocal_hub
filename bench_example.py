@@ -20,26 +20,20 @@ def main():
 
     settings = RuntimeSettings()
 
-    try:
-        response = client.benchmark(
-            model_path=model_path,
-            settings=settings,
-            device_filters=device_filters,
-            timeout=600,
-            skip_existing=True,
-        )
+    response = client.benchmark(
+        model_path=model_path,
+        settings=settings,
+        device_filters=device_filters,
+        timeout=600,
+        skip_existing=True,
+    )
 
-        # Ensure result is a list for display function
-        results = (
-            response.results
-            if isinstance(response.results, list)
-            else [response.results]
-        )
+    # Ensure result is a list for display function
+    results = (
+        response.results if isinstance(response.results, list) else [response.results]
+    )
 
-        display_benchmark_results(results, show_versions=True, show_settings=True)
-
-    except Exception as e:
-        print(f"Benchmark failed: {type(e).__name__}: {e}")
+    display_benchmark_results(results, show_versions=True, show_settings=True)
 
 
 if __name__ == "__main__":
