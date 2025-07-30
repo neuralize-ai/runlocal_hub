@@ -388,6 +388,7 @@ class RunLocalClient:
         device_count: Optional[int] = 1,
         output_dir: Optional[Union[str, Path]] = None,
         skip_output_download: bool = False,
+        skip_existing: bool = False,
     ) -> BenchmarkResponse:
         """
         Benchmark a model with clean, user-friendly API.
@@ -404,6 +405,7 @@ class RunLocalClient:
             device_count: Number of devices to benchmark on (None = all, 1 = single result, >1 = list)
             output_dir: Directory to save output tensors (defaults to ./outputs/)
             skip_output_download: If True, skip downloading output tensors even if inputs are provided
+            skip_existing: If True, skip benchmarks that have already been run on the same device/model combination
 
         Returns:
             BenchmarkResponse containing:
@@ -414,7 +416,7 @@ class RunLocalClient:
 
             Use response.incomplete_job_ids to check for timed-out jobs
             Use client.check_multiple_jobs(response.incomplete_job_ids) to check status later
-            Use client.get_benchmark_results(job_ids, timeout=60) to wait and process jobs
+            Use client.get_benchmark_results(job_ids, timeout=None) to wait and process jobs
 
         Raises:
             ValueError: If neither model_path nor model_id is provided
@@ -472,6 +474,7 @@ class RunLocalClient:
             poll_interval=poll_interval,
             output_dir=output_dir,
             skip_output_download=skip_output_download,
+            skip_existing=skip_existing,
         )
 
     def predict(
@@ -510,7 +513,7 @@ class RunLocalClient:
 
             Use response.incomplete_job_ids to check for timed-out jobs
             Use client.check_multiple_jobs(response.incomplete_job_ids) to check status later
-            Use client.get_prediction_results(job_ids, timeout=60) to wait and process jobs
+            Use client.get_prediction_results(job_ids, timeout=None) to wait and process jobs
 
         Raises:
             ValueError: If neither model_path nor model_id is provided
@@ -579,6 +582,7 @@ class RunLocalClient:
         poll_interval: int = 10,
         output_dir: Optional[Union[str, Path]] = None,
         skip_output_download: bool = False,
+        skip_existing: bool = False,
     ) -> BenchmarkResponse:
         """
         Internal method to run benchmarks using refactored components.
@@ -590,6 +594,7 @@ class RunLocalClient:
             settings=settings,
             inputs=inputs,
             job_type=JobType.BENCHMARK,
+            skip_existing=skip_existing,
         )
 
         # Configure poller with custom interval
@@ -706,19 +711,10 @@ class RunLocalClient:
         settings: Optional[RuntimeSettings] = None,
         inputs: Optional[Dict[str, np.ndarray]] = None,
         job_type: JobType = JobType.BENCHMARK,
+        skip_existing: bool = False,
     ) -> List[str]:
         """
-        Submit jobs to the API and return job IDs.
-
-        Args:
-            model_id: Model ID to run jobs on
-            devices: List of devices to run jobs on
-            settings: Optional runtime settings
-            inputs: Optional input tensors for the jobs
-            job_type: Type of job to submit (benchmark or prediction)
-
-        Returns:
-            List of job IDs that were submitted
+        Internal method to submit jobs to the API and return job IDs.
         """
         # Upload input tensors if provided
         input_tensors_id = None
@@ -746,6 +742,7 @@ class RunLocalClient:
             device_requests=device_requests,
             settings=settings,
             job_type=job_type,
+            skip_existing=skip_existing,
         )
 
         # Add input tensors to the payload if provided
