@@ -17,13 +17,17 @@ def main():
     )
 
     try:
-        result = client.predict(
+        response = client.predict(
             inputs=inputs,
             model_path=model_path,
             device_filters=device_filters,
             timeout=None,
         )
 
+        # Extract result from response
+        result = (
+            response.results if isinstance(response.results, list) else response.results
+        )
         if isinstance(result, list):
             result = result[0]
 
@@ -36,6 +40,7 @@ def main():
 
         for compute_unit, output_tensors in result.outputs.items():
             print(f"\nOutputs for compute unit '{compute_unit}':")
+            # Note: normally, you would postprocess the model outputs here
             for name, path in output_tensors.items():
                 print(f"  {name}: {path}")
 

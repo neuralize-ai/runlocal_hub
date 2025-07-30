@@ -7,8 +7,6 @@ from runlocal_hub import (
     display_benchmark_results,
 )
 
-from runlocal_hub.models.settings.coreml import CoreMLSettings, SpecializationStrategy
-
 
 def main():
     client = RunLocalClient()
@@ -16,29 +14,27 @@ def main():
     model_path = "model.mlpackage"
 
     device_filters = DeviceFilters(
-        # device_name="MacBook",  # Filter by device name
+        device_name="MacBook",
         year_min=2023,
     )
 
     settings = RuntimeSettings()
 
-    coreml_settings = CoreMLSettings(
-        allowLowPrecisionAccumulationOnGPU=True,
-        specializationStrategy=SpecializationStrategy.fastPrediction,
-    )
-
-    settings.framework_settings = coreml_settings.format()
-
     try:
-        result = client.benchmark(
+        response = client.benchmark(
             model_path=model_path,
             settings=settings,
             device_filters=device_filters,
-            timeout=None,  # Block until finished
+            timeout=600,
+            skip_existing=True,
         )
 
         # Ensure result is a list for display function
-        results = result if isinstance(result, list) else [result]
+        results = (
+            response.results
+            if isinstance(response.results, list)
+            else [response.results]
+        )
 
         display_benchmark_results(results, show_versions=True, show_settings=True)
 
