@@ -87,7 +87,7 @@ class JobPoller:
             self._print_simple_progress(len(completed_ids), len(job_ids), 0)
 
         try:
-            while self._should_continue(start_time, timeout, completed_ids, job_ids):
+            while True:
                 # Update elapsed time for all jobs
                 elapsed = int(time.time() - start_time)
 
@@ -143,6 +143,10 @@ class JobPoller:
 
                 # Break if all jobs complete
                 if len(completed_ids) == len(job_ids):
+                    break
+
+                # Check if we should continue before sleeping
+                if not self._should_continue(start_time, timeout, completed_ids, job_ids):
                     break
 
                 # Wait before checking again
