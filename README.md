@@ -77,8 +77,8 @@ from runlocal_hub import RunLocalClient, display_benchmark_results
 client = RunLocalClient()
 
 # Benchmark on any available device
-result = client.benchmark("model.mlpackage")
-display_benchmark_results(results)
+response = client.benchmark("model.mlpackage")
+display_benchmark_results(response.results)
 ```
 
 ### Device Filtering
@@ -106,7 +106,7 @@ iphone_filters = DeviceFilters(
 )
 
 # Run benchmarks
-results = client.benchmark(
+response = client.benchmark(
     "model.mlpackage",
     device_filters=[mac_filters, iphone_filters],
     count=None  # Use all matching devices
@@ -125,14 +125,17 @@ image = np.random.rand(1, 3, 224, 224).astype(np.float32)
 inputs = {"image": image}
 
 # Run prediction on iPhone
-outputs = client.predict(
+response = client.predict(
     inputs=inputs,
     model_path="model.mlpackage",
     device_filters=DeviceFilters(device_name="iPhone 15", compute_units=["CPU_AND_NE"])
 )
 
+outputs = response.results.outputs
+
 tensors = outputs["CPU_AND_NE"]
-for name, tensor in tensors.items():
+for name, path in tensors.items():
+    tensor = np.load(path)
     print(f"  {name}: {tensor.shape} ({tensor.dtype})")
     print(f"  First values: {tensor.flatten()[:5]}")
 ```
