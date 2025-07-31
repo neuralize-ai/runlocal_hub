@@ -24,9 +24,7 @@ def main():
     )
 
     # Extract result from response
-    result = (
-        response.results if isinstance(response.results, list) else response.results
-    )
+    result = response.results
     if isinstance(result, list):
         result = result[0]
 
