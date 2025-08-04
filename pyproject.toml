@@ -48,6 +48,13 @@ dependencies = [
     "rich>=10.0.0",
 ]
 
+[dependency-groups]
+dev = [
+    "pyright>=1.1.403",
+    "pytest>=8.4.1",
+    "ruff>=0.12.7",
+]
+
 [project.urls]
 Homepage = "https://runlocal.ai"
 Repository = "https://github.com/neuralize-ai/runlocal_hub"
