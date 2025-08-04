@@ -12,17 +12,19 @@ class TestHTTPClient:
     def test_http_client_initialization(self):
         """Test HTTP client initialization with normal and debug modes"""
         # Normal mode
-        client = HTTPClient(base_url="https://neuralize-bench.com", api_key="test_key")
+        client = HTTPClient(base_url="https://neuralize-bench.com", api_key="test_key", max_retry_attempts=1)
         assert client.base_url == "https://neuralize-bench.com"
         assert client.headers["X-API-KEY"] == "test_key"
         assert client.api_key == "test_key"
         assert client.debug is False
+        assert client.max_retry_attempts == 1
 
         # Debug mode
         debug_client = HTTPClient(
-            base_url="https://neuralize-bench.com", api_key="test_key", debug=True
+            base_url="https://neuralize-bench.com", api_key="test_key", debug=True, max_retry_attempts=1
         )
         assert debug_client.debug is True
+        assert debug_client.max_retry_attempts == 1
 
     @responses.activate
     def test_successful_requests(self):
@@ -43,7 +45,7 @@ class TestHTTPClient:
             status=201,
         )
 
-        client = HTTPClient(base_url="https://neuralize-bench.com", api_key="test_key")
+        client = HTTPClient(base_url="https://neuralize-bench.com", api_key="test_key", max_retry_attempts=1)
 
         # Test GET
         get_result = client.get("/test")
@@ -76,7 +78,7 @@ class TestHTTPClient:
             status=status_code,
         )
 
-        client = HTTPClient(base_url="https://neuralize-bench.com", api_key="test_key")
+        client = HTTPClient(base_url="https://neuralize-bench.com", api_key="test_key", max_retry_attempts=1)
         with pytest.raises(error_class) as exc_info:
             client.get("/test")
 
@@ -113,7 +115,7 @@ class TestHTTPClient:
             status=200,
         )
 
-        client = HTTPClient(base_url="https://neuralize-bench.com", api_key="test_key")
+        client = HTTPClient(base_url="https://neuralize-bench.com", api_key="test_key", max_retry_attempts=1)
 
         # Test query parameters
         result = client.get("/test", params={"filter": "active", "limit": 10})
@@ -152,7 +154,7 @@ class TestHTTPClient:
             status=400,
         )
 
-        client = HTTPClient(base_url="https://neuralize-bench.com", api_key="test_key")
+        client = HTTPClient(base_url="https://neuralize-bench.com", api_key="test_key", max_retry_attempts=1)
 
         # Test non-JSON success
         text_result = client.get("/text")
@@ -187,7 +189,7 @@ class TestHTTPClient:
             callback=timeout_error_callback,
         )
 
-        client = HTTPClient(base_url="https://neuralize-bench.com", api_key="test_key")
+        client = HTTPClient(base_url="https://neuralize-bench.com", api_key="test_key", max_retry_attempts=1)
 
         # Test connection error
         with pytest.raises(Exception) as exc_info:

@@ -2,11 +2,9 @@
 Tests for benchmark models with performance data.
 """
 
-from decimal import Decimal
 import pytest
 from runlocal_hub.models.benchmark import (
     BenchmarkData,
-    BenchmarkDataFloat,
     BenchmarkDbItem,
     BenchmarkStatus,
 )
@@ -34,21 +32,21 @@ def performance_benchmark_data():
         Status=BenchmarkStatus.Complete,
         ComputeUnit="CPU",
         # Load performance
-        LoadMsArray=[Decimal("125.5"), Decimal("130.2"), Decimal("128.7")],
-        LoadMsAverage=Decimal("128.13"),
-        LoadMsMedian=Decimal("128.7"),
+        LoadMsArray=[125.5, 130.2, 128.7],
+        LoadMsAverage=128.13,
+        LoadMsMedian=128.7,
         # Inference performance
         InferenceMsArray=[
-            Decimal("15.2"),
-            Decimal("14.8"),
-            Decimal("15.1"),
-            Decimal("15.0"),
+            15.2,
+            14.8,
+            15.1,
+            15.0,
         ],
-        InferenceMsAverage=Decimal("15.025"),
-        InferenceMsMedian=Decimal("15.05"),
+        InferenceMsAverage=15.025,
+        InferenceMsMedian=15.05,
         # Memory usage
-        PeakLoadRamUsage=Decimal("1024.5"),
-        PeakRamUsage=Decimal("1536.8"),
+        PeakLoadRamUsage=1024.5,
+        PeakRamUsage=1536.8,
         # Output tensor ID
         OutputTensorsId="tensor-output-123",
     )
@@ -76,20 +74,20 @@ def gpu_benchmark_data():
         Status=BenchmarkStatus.Complete,
         ComputeUnit="GPU",
         # Faster GPU performance
-        LoadMsArray=[Decimal("85.2"), Decimal("87.1"), Decimal("86.3")],
-        LoadMsAverage=Decimal("86.2"),
-        LoadMsMedian=Decimal("86.3"),
+        LoadMsArray=[85.2, 87.1, 86.3],
+        LoadMsAverage=86.2,
+        LoadMsMedian=86.3,
         InferenceMsArray=[
-            Decimal("8.5"),
-            Decimal("8.2"),
-            Decimal("8.7"),
-            Decimal("8.3"),
+            8.5,
+            8.2,
+            8.7,
+            8.3,
         ],
-        InferenceMsAverage=Decimal("8.425"),
-        InferenceMsMedian=Decimal("8.4"),
+        InferenceMsAverage=8.425,
+        InferenceMsMedian=8.4,
         # Higher memory usage on GPU
-        PeakLoadRamUsage=Decimal("2048.0"),
-        PeakRamUsage=Decimal("3072.5"),
+        PeakLoadRamUsage=2048.0,
+        PeakRamUsage=3072.5,
         OutputTensorsId="tensor-gpu-456",
     )
 
@@ -102,20 +100,20 @@ def ane_benchmark_data():
         Status=BenchmarkStatus.Complete,
         ComputeUnit="ANE",
         # Very fast ANE performance
-        LoadMsArray=[Decimal("45.1"), Decimal("44.8"), Decimal("45.2")],
-        LoadMsAverage=Decimal("45.03"),
-        LoadMsMedian=Decimal("45.1"),
+        LoadMsArray=[45.1, 44.8, 45.2],
+        LoadMsAverage=45.03,
+        LoadMsMedian=45.1,
         InferenceMsArray=[
-            Decimal("2.1"),
-            Decimal("2.0"),
-            Decimal("2.2"),
-            Decimal("2.1"),
+            2.1,
+            2.0,
+            2.2,
+            2.1,
         ],
-        InferenceMsAverage=Decimal("2.1"),
-        InferenceMsMedian=Decimal("2.1"),
+        InferenceMsAverage=2.1,
+        InferenceMsMedian=2.1,
         # Lower memory usage on ANE
-        PeakLoadRamUsage=Decimal("512.5"),
-        PeakRamUsage=Decimal("768.2"),
+        PeakLoadRamUsage=512.5,
+        PeakRamUsage=768.2,
         OutputTensorsId="tensor-ane-789",
     )
 
@@ -133,17 +131,17 @@ class TestBenchmarkData:
 
         # Test load metrics
         assert len(data.LoadMsArray) == 3
-        assert data.LoadMsAverage == Decimal("128.13")
-        assert data.LoadMsMedian == Decimal("128.7")
+        assert data.LoadMsAverage == 128.13
+        assert data.LoadMsMedian == 128.7
 
         # Test inference metrics
         assert len(data.InferenceMsArray) == 4
-        assert data.InferenceMsAverage == Decimal("15.025")
-        assert data.InferenceMsMedian == Decimal("15.05")
+        assert data.InferenceMsAverage == 15.025
+        assert data.InferenceMsMedian == 15.05
 
         # Test memory metrics
-        assert data.PeakLoadRamUsage == Decimal("1024.5")
-        assert data.PeakRamUsage == Decimal("1536.8")
+        assert data.PeakLoadRamUsage == 1024.5
+        assert data.PeakRamUsage == 1536.8
 
     def test_benchmark_data_creation_failed(self, failed_benchmark_data):
         """Test creating BenchmarkData for failed benchmark."""
@@ -167,58 +165,6 @@ class TestBenchmarkData:
         assert data.LoadMsArray is None
         assert data.InferenceMsArray is None
 
-    def test_to_json_dict_complete(self, performance_benchmark_data):
-        """Test converting complete BenchmarkData to JSON dictionary."""
-        data = performance_benchmark_data
-        json_dict = data.to_json_dict()
-
-        # Check that Decimals are converted to strings
-        assert json_dict["LoadMsAverage"] == "128.13"
-        assert json_dict["InferenceMsAverage"] == "15.025"
-        assert json_dict["PeakRamUsage"] == "1536.8"
-
-        # Check that arrays are converted
-        assert json_dict["LoadMsArray"] == ["125.5", "130.2", "128.7"]
-        assert json_dict["InferenceMsArray"] == ["15.2", "14.8", "15.1", "15.0"]
-
-        # Check that None values are excluded
-        assert "FailureReason" not in json_dict
-        assert "FailureError" not in json_dict
-
-    def test_to_json_dict_failed(self, failed_benchmark_data):
-        """Test converting failed BenchmarkData to JSON dictionary."""
-        data = failed_benchmark_data
-        json_dict = data.to_json_dict()
-
-        assert json_dict["Success"] is False
-        assert json_dict["Status"] == BenchmarkStatus.Failed
-        assert json_dict["FailureReason"] == "Model incompatible with GPU"
-        assert json_dict["FailureError"] == "CoreML error: Model requires iOS 16.0+"
-        assert json_dict["ComputeUnit"] == "GPU"
-
-        # Performance metrics should not be present
-        assert "LoadMsAverage" not in json_dict
-        assert "InferenceMsAverage" not in json_dict
-
-    def test_to_float_dict_complete(self, performance_benchmark_data):
-        """Test converting complete BenchmarkData to float dictionary."""
-        data = performance_benchmark_data
-        float_dict = data.to_float_dict()
-
-        # Check that Decimals are converted to floats
-        assert isinstance(float_dict["LoadMsAverage"], float)
-        assert float_dict["LoadMsAverage"] == 128.13
-        assert isinstance(float_dict["InferenceMsAverage"], float)
-        assert float_dict["InferenceMsAverage"] == 15.025
-
-        # Check that arrays are converted to floats
-        assert isinstance(float_dict["LoadMsArray"], list)
-        assert all(isinstance(x, float) for x in float_dict["LoadMsArray"])
-        assert float_dict["LoadMsArray"] == [125.5, 130.2, 128.7]
-
-        # Check the PeakInferenceRamUsage field mapping
-        assert "PeakInferenceRamUsage" in float_dict
-        assert float_dict["PeakInferenceRamUsage"] == 1536.8
 
     def test_performance_comparison_across_compute_units(
         self, performance_benchmark_data, gpu_benchmark_data, ane_benchmark_data
@@ -228,48 +174,21 @@ class TestBenchmarkData:
         gpu_data = gpu_benchmark_data
         ane_data = ane_benchmark_data
 
-        # Convert to float for easier comparison
-        cpu_float = cpu_data.to_float_dict()
-        gpu_float = gpu_data.to_float_dict()
-        ane_float = ane_data.to_float_dict()
-
         # ANE should be fastest for inference
-        assert ane_float["InferenceMsAverage"] < gpu_float["InferenceMsAverage"]
-        assert gpu_float["InferenceMsAverage"] < cpu_float["InferenceMsAverage"]
+        assert ane_data.InferenceMsAverage < gpu_data.InferenceMsAverage
+        assert gpu_data.InferenceMsAverage < cpu_data.InferenceMsAverage
 
         # GPU should be faster than CPU for loading
-        assert gpu_float["LoadMsAverage"] < cpu_float["LoadMsAverage"]
+        assert gpu_data.LoadMsAverage < cpu_data.LoadMsAverage
 
-        # Memory usage patterns (using PeakInferenceRamUsage which is the mapped field name)
+        # Memory usage patterns
         assert (
-            ane_float["PeakInferenceRamUsage"]
-            < cpu_float["PeakInferenceRamUsage"]
-            < gpu_float["PeakInferenceRamUsage"]
+            ane_data.PeakRamUsage
+            < cpu_data.PeakRamUsage
+            < gpu_data.PeakRamUsage
         )
 
 
-class TestBenchmarkDataFloat:
-    """Test cases for BenchmarkDataFloat model."""
-
-    def test_from_benchmark_data_conversion(self, performance_benchmark_data):
-        """Test creating BenchmarkDataFloat from BenchmarkData."""
-        original = performance_benchmark_data
-        float_data = BenchmarkDataFloat.from_benchmark_data(original)
-
-        assert float_data.ComputeUnit == "CPU"
-        assert float_data.Success is True
-        assert float_data.Status == BenchmarkStatus.Complete
-
-        # Check float conversions
-        assert isinstance(float_data.LoadMsAverage, float)
-        assert float_data.LoadMsAverage == 128.13
-        assert isinstance(float_data.InferenceMsAverage, float)
-        assert float_data.InferenceMsAverage == 15.025
-
-        # Check array conversions
-        assert isinstance(float_data.LoadMsArray, list)
-        assert all(isinstance(x, float) for x in float_data.LoadMsArray)
-        assert float_data.LoadMsArray == [125.5, 130.2, 128.7]
 
 
 class TestBenchmarkDbItem:

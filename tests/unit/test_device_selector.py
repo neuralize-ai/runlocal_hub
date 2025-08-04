@@ -65,10 +65,10 @@ def sample_devices():
 def sample_device_usage(sample_devices):
     """Create sample DeviceUsage objects for testing."""
     return [
-        DeviceUsage(device=sample_devices[0], compute_units=["CPU", "GPU", "ANE"]),
-        DeviceUsage(device=sample_devices[1], compute_units=["CPU", "GPU"]),
-        DeviceUsage(device=sample_devices[2], compute_units=["CPU", "GPU", "ANE"]),
-        DeviceUsage(device=sample_devices[3], compute_units=["CPU", "GPU"]),
+        DeviceUsage(device=sample_devices[0], compute_units=["CPU", "GPU", "ANE"], native_device_id="device_1"),
+        DeviceUsage(device=sample_devices[1], compute_units=["CPU", "GPU"], native_device_id="device_2"),
+        DeviceUsage(device=sample_devices[2], compute_units=["CPU", "GPU", "ANE"], native_device_id="device_3"),
+        DeviceUsage(device=sample_devices[3], compute_units=["CPU", "GPU"], native_device_id="device_4"),
     ]
 
 
@@ -94,6 +94,7 @@ class TestDeviceSelector:
                     "Disabled": False,
                 },
                 "compute_units": ["CPU", "GPU", "ANE"],
+                "native_device_id": "device_1",
             },
             {
                 "device": {
@@ -106,6 +107,7 @@ class TestDeviceSelector:
                     "Disabled": True,
                 },
                 "compute_units": ["CPU"],
+                "native_device_id": "device_2",
             },
             {
                 "device": {
@@ -118,6 +120,7 @@ class TestDeviceSelector:
                     "Disabled": False,
                 },
                 "compute_units": [],
+                "native_device_id": "device_3",
             },
         ]
         mock_http_client.get.return_value = mock_response

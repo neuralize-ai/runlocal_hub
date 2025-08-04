@@ -92,13 +92,13 @@ class TestJobPoller:
         mock_http_client.get.return_value = sample_benchmark_item.model_dump()
 
         result = job_poller.poll_single_job(
-            "job-123", JobType.BENCHMARK, "iPhone 15 Pro"
+            "job-123", JobType.BENCHMARK
         )
 
         assert result is not None
         assert result.job_id == "job-123"
         assert result.status == BenchmarkStatus.Complete
-        assert result.device_name == "iPhone 15 Pro"
+        assert result.device.Name == "iPhone 15 Pro"
         assert result.is_complete
         assert result.is_successful
 
@@ -130,13 +130,14 @@ class TestJobPoller:
         mock_http_client.get.side_effect = mock_get
 
         results = job_poller.poll_jobs(
-            ["job-1", "job-2"], JobType.BENCHMARK, device_names=["Device 1", "Device 2"]
+            ["job-1", "job-2"], JobType.BENCHMARK
         )
 
         assert len(results) == 2
         assert all(r.is_successful for r in results)
-        assert results[0].device_name == "Device 1"
-        assert results[1].device_name == "Device 2"
+        # Device names should come from the device info in the mock data
+        assert results[0].device.Name == "iPhone 15 Pro"
+        assert results[1].device.Name == "iPhone 15 Pro"
 
     @patch("runlocal_hub.jobs.poller.JobStatusDisplay")
     @patch("runlocal_hub.jobs.poller.handle_api_errors", lambda func: func)
@@ -187,11 +188,9 @@ class TestJobPoller:
         # Should return empty list for incomplete jobs
         assert len(results) == 0
 
-        # Verify warning was printed
-        mock_display_instance.print_warning.assert_called()
-        warning_call = mock_display_instance.print_warning.call_args[0][0]
-        assert "Timeout" in warning_call
-        assert "0/1" in warning_call
+        # Verify display was started and stopped properly
+        mock_display_instance.start_live_display.assert_called()
+        mock_display_instance.stop_display.assert_called()
 
     @patch("runlocal_hub.jobs.poller.JobStatusDisplay")
     @patch("runlocal_hub.jobs.poller.handle_api_errors", lambda func: func)
@@ -201,11 +200,11 @@ class TestJobPoller:
         """Test checking status of completed job."""
         mock_http_client.get.return_value = sample_benchmark_item.model_dump()
 
-        result = job_poller._check_job_status("job-123", "Test Device")
+        result = job_poller._check_job_status("job-123")
 
         assert result.job_id == "job-123"
         assert result.status == BenchmarkStatus.Complete
-        assert result.device_name == "Test Device"
+        assert result.device.Name == "iPhone 15 Pro"  # Should come from sample_benchmark_item device
         assert result.is_complete
         assert result.data is not None
 
