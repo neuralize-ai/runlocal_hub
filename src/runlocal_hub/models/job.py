@@ -34,7 +34,6 @@ class JobResult:
 
     job_id: str
     status: BenchmarkStatus
-    device_name: Optional[str] = None
     device: Optional[Device] = None
     data: Optional[Any] = None
     error: Optional[str] = None

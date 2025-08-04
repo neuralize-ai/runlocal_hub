@@ -812,8 +812,9 @@ class RunLocalClient:
             else:
                 # Log the error but don't include failed results
                 if self.verbosity >= 2:
+                    device_name = result.device.Name if result.device else ""
                     print(
-                        f"Warning: Benchmark failed for device {result.device_name}: {result.error}"
+                        f"Warning: Benchmark failed for device {device_name}: {result.error}"
                     )
 
         return processed_results
@@ -876,14 +877,16 @@ class RunLocalClient:
                     processed_results.append(prediction_result)
                 else:
                     if self.verbosity >= 2:
+                        device_name = result.device.Name if result.device else ""
                         print(
-                            f"Warning: Prediction completed but no output tensors found for device {result.device_name}"
+                            f"Warning: Prediction completed but no output tensors found for device {device_name}"
                         )
             else:
                 # Log the error but don't include failed results
                 if self.verbosity >= 2:
+                    device_name = result.device.Name if result.device else ""
                     print(
-                        f"Warning: Prediction failed for device {result.device_name}: {result.error}"
+                        f"Warning: Prediction failed for device {device_name}: {result.error}"
                     )
 
         return processed_results

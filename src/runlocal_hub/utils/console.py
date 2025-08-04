@@ -82,7 +82,7 @@ class JobStatusDisplay:
                 details = Text("  Waiting in queue", style="yellow")
 
             # Extract device information
-            device_name = result.device_name or "Unknown"
+            device_name = ""
             soc = ""
             ram = ""
 
