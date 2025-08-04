@@ -39,18 +39,34 @@ Check out our [public demo](https://edgemeter.runlocal.ai/public/pipelines) for 
 
 ## 🛠 Installation
 
+### Using uv
+
+Add to your project with [uv](https://github.com/astral-sh/uv):
+
+```bash
+uv add runlocal-hub
+```
+
+Then run:
+
+```bash
+uv sync
+```
+
+### Using pip
+
 ```bash
 pip install runlocal-hub
 ```
 
 ### Development Installation
 
-For development or to install from source:
+For development or to install from source using uv:
 
 ```bash
 git clone https://github.com/neuralize-ai/runlocal_hub.git
 cd runlocal_hub
-pip install -e .
+uv sync
 ```
 
 ## 🔑 Authentication
