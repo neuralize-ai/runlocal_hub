@@ -55,16 +55,8 @@ Issues = "https://github.com/neuralize-ai/runlocal_hub/issues"
 Changelog = "https://github.com/neuralize-ai/runlocal_hub/blob/main/CHANGELOG.md"
 
 [build-system]
-requires = ["setuptools>=45", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["runlocal_hub*"]
-exclude = ["tests*"]
-
-[tool.setuptools.package-dir]
-"" = "src"
+requires = ["uv_build>=0.8.3,<0.9.0"]
+build-backend = "uv_build"
 
 [tool.pyright]
 venvPath = "."
