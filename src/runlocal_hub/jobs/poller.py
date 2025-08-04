@@ -37,7 +37,6 @@ class JobPoller:
         job_type: JobType,
         timeout: Optional[int] = 600,
         progress_callback: Optional[Callable[[JobResult], None]] = None,
-        device_names: Optional[List[str]] = None,
     ) -> List[JobResult]:
         """
         Poll multiple jobs until completion.
@@ -47,7 +46,6 @@ class JobPoller:
             job_type: Type of jobs being polled
             timeout: Maximum time in seconds to wait for completion
             progress_callback: Optional callback function called when each job completes
-            device_names: Optional list of device names corresponding to job_ids
 
         Returns:
             List of job results
