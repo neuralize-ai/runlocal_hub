@@ -10,8 +10,6 @@ class UploadedModelType(str, Enum):
     MLMODELC = "MLMODELC"
     OPENVINO = "OPENVINO"
     ONNX = "ONNX"
-    TF_SAVED_MODEL = "TF_SAVED_MODEL"
-    EXECUTORCH = "EXECUTORCH"
     TORCHSCRIPT = "TORCHSCRIPT"
 
     # Keras can be saved in 3 different file formats
@@ -44,7 +42,7 @@ class UploadDbItem(BaseModel):
 
     Source: Optional[str] = None
 
-    @field_validator('FileSize', mode='before')
+    @field_validator("FileSize", mode="before")
     @classmethod
     def convert_decimal_filesize(cls, v):
         """Convert Decimal FileSize to float."""
