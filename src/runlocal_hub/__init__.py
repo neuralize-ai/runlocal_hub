@@ -1,6 +1,5 @@
 """RunLocal API Client Package"""
 
-from .__version__ import __version__
 from .client import RunLocalClient
 from .devices import DeviceFilters
 from .exceptions import (
@@ -39,7 +38,6 @@ from .utils import (
 )
 
 __all__ = [
-    "__version__",
     "RunLocalClient",
     "Device",
     "DeviceUsage",
