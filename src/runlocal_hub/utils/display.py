@@ -235,8 +235,8 @@ def _display_grouped_results(
 
             if show_ram_usage:
                 inference_ram = (
-                    f"{benchmark_data.PeakInferenceRamUsage:.1f}"
-                    if benchmark_data.PeakInferenceRamUsage
+                    f"{benchmark_data.PeakRamUsage:.1f}"
+                    if benchmark_data.PeakRamUsage
                     else "N/A"
                 )
                 load_ram = (

@@ -9,7 +9,6 @@ from ..http import HTTPClient
 from ..models import BenchmarkDbItem, BenchmarkStatus, JobResult, JobType
 from ..utils.console import JobStatusDisplay
 from ..utils.decorators import handle_api_errors
-from ..utils.json import convert_to_json_friendly
 
 
 class JobPoller:
@@ -38,6 +37,7 @@ class JobPoller:
         job_type: JobType,
         timeout: Optional[int] = 600,
         progress_callback: Optional[Callable[[JobResult], None]] = None,
+        device_names: Optional[List[str]] = None,
     ) -> List[JobResult]:
         """
         Poll multiple jobs until completion.
@@ -47,6 +47,7 @@ class JobPoller:
             job_type: Type of jobs being polled
             timeout: Maximum time in seconds to wait for completion
             progress_callback: Optional callback function called when each job completes
+            device_names: Optional list of device names corresponding to job_ids
 
         Returns:
             List of job results
@@ -222,7 +223,7 @@ class JobPoller:
         # Convert benchmark data to JSON-friendly format if complete
         result_data = None
         if benchmark.Status in [BenchmarkStatus.Complete, BenchmarkStatus.Failed]:
-            result_data = convert_to_json_friendly(benchmark)
+            result_data = benchmark.model_dump()
 
         return JobResult(
             job_id=job_id,

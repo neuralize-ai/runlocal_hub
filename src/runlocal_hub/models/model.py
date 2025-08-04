@@ -1,8 +1,7 @@
-from decimal import Decimal
 from enum import Enum
 from typing import Optional, List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class UploadedModelType(str, Enum):
@@ -36,7 +35,7 @@ class UploadDbItem(BaseModel):
     CreatedUtc: str
     UpdatedUtc: str
     FileName: str
-    FileSize: Decimal
+    FileSize: float
     Benchmarks: Optional[List[str]] = None
     ModelType: Optional[UploadedModelType] = None
     License: Optional[LicenseInfo] = None
@@ -44,3 +43,11 @@ class UploadDbItem(BaseModel):
     Tag: Optional[str] = None
 
     Source: Optional[str] = None
+
+    @field_validator('FileSize', mode='before')
+    @classmethod
+    def convert_decimal_filesize(cls, v):
+        """Convert Decimal FileSize to float."""
+        if v is None:
+            return None
+        return float(v)

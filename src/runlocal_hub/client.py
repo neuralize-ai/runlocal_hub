@@ -20,7 +20,6 @@ from runlocal_hub.models import (
 from runlocal_hub.models.job import JobResult
 from runlocal_hub.models.model import UploadDbItem
 from runlocal_hub.utils.display import display_incomplete_panel
-from runlocal_hub.utils.json import convert_to_json_friendly
 
 from .devices import DeviceFilters, DeviceSelector
 from .exceptions import ConfigurationError, RunLocalError, UploadError, ValidationError
@@ -28,7 +27,6 @@ from .http import HTTPClient
 from .jobs import JobPoller
 from .models import (
     BenchmarkData,
-    BenchmarkDataFloat,
     BenchmarkResponse,
     BenchmarkResult,
     Device,
@@ -196,16 +194,13 @@ class RunLocalClient:
             if benchmark_item.Status != BenchmarkStatus.Complete:
                 continue
 
-            result = convert_to_json_friendly(benchmark_item)
+            result = benchmark_item.model_dump()
             device = result.get("DeviceInfo", {})
 
             # Convert benchmark data to float format
             benchmark_data = []
             for bd in result.get("BenchmarkData", []):
-                original_bd = BenchmarkData(**bd)
-                benchmark_data.append(
-                    BenchmarkDataFloat.from_benchmark_data(original_bd)
-                )
+                benchmark_data.append(BenchmarkData(**bd))
             benchmark_result = BenchmarkResult(
                 device=device,
                 benchmark_data=benchmark_data,
@@ -787,10 +782,7 @@ class RunLocalClient:
                 # Convert benchmark data to float format
                 benchmark_data = []
                 for bd in result.data.get("BenchmarkData", []):
-                    original_bd = BenchmarkData(**bd)
-                    benchmark_data.append(
-                        BenchmarkDataFloat.from_benchmark_data(original_bd)
-                    )
+                    benchmark_data.append(BenchmarkData(**bd))
 
                 output_tensors = None
                 if not skip_output_download:

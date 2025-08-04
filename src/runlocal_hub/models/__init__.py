@@ -1,6 +1,5 @@
 from .benchmark import (
     BenchmarkData,
-    BenchmarkDataFloat,
     BenchmarkDbItem,
 )
 from .benchmark_result import BenchmarkResult
@@ -17,7 +16,6 @@ __all__ = [
     "DeviceUsage",
     "BenchmarkStatus",
     "BenchmarkData",
-    "BenchmarkDataFloat",
     "BenchmarkDbItem",
     "BenchmarkResult",
     "BenchmarkResponse",
