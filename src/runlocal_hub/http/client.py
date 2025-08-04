@@ -17,6 +17,7 @@ class HTTPClient:
         base_url: str,
         api_key: str,
         debug: bool = False,
+        max_retry_attempts: int = 5,
     ):
         """
         Initialize the HTTP client.
@@ -25,15 +26,14 @@ class HTTPClient:
             base_url: Base URL for the API
             api_key: API key for authentication
             debug: Enable debug logging
-            max_retries: Maximum number of retry attempts (default: from env or 3)
-            retry_delay: Base delay between retries in seconds (default: from env or 1.0)
+            max_retry_attempts: Maximum number of retry attempts (default: 5)
         """
         self.base_url = base_url
         self.api_key = api_key
         self.headers = {"X-API-KEY": api_key}
         self.debug = debug
+        self.max_retry_attempts = max_retry_attempts
 
-    @with_retry()
     def request(
         self,
         method: str,
@@ -59,6 +59,19 @@ class HTTPClient:
             requests.exceptions.RequestException: For network errors
             Exception: For API errors
         """
+        return with_retry(max_attempts=self.max_retry_attempts)(self._request)(
+            method, endpoint, data, params, stream
+        )
+
+    def _request(
+        self,
+        method: str,
+        endpoint: str,
+        data: Optional[Union[Dict, bytes]] = None,
+        params: Optional[Dict] = None,
+        stream: bool = False,
+    ) -> Any:
+        """Internal request implementation without retry logic."""
         url = f"{self.base_url}{endpoint}"
 
         headers = self.headers.copy()
@@ -162,7 +175,6 @@ class HTTPClient:
         """
         return self.request("POST", endpoint, data=data, params=params)
 
-    @with_retry()
     def post_streaming(
         self, endpoint: str, data: bytes, params: Optional[Dict] = None
     ) -> Iterator[Dict]:
@@ -180,6 +192,14 @@ class HTTPClient:
         Raises:
             Exception: For upload errors
         """
+        return with_retry(max_attempts=self.max_retry_attempts)(self._post_streaming)(
+            endpoint, data, params
+        )
+
+    def _post_streaming(
+        self, endpoint: str, data: bytes, params: Optional[Dict] = None
+    ) -> Iterator[Dict]:
+        """Internal streaming POST implementation without retry logic."""
         response = self.request("POST", endpoint, data=data, params=params, stream=True)
 
         # Check initial response status
@@ -207,7 +227,6 @@ class HTTPClient:
                             print(f"Failed to parse SSE message: {line_str}")
                         continue
 
-    @with_retry()
     def post_file(
         self,
         endpoint: str,
@@ -225,6 +244,17 @@ class HTTPClient:
         Returns:
             API response
         """
+        return with_retry(max_attempts=self.max_retry_attempts)(self._post_file)(
+            endpoint, files, params
+        )
+
+    def _post_file(
+        self,
+        endpoint: str,
+        files: Dict[str, tuple],
+        params: Optional[Dict] = None,
+    ) -> Dict:
+        """Internal file upload implementation without retry logic."""
         url = f"{self.base_url}{endpoint}"
 
         if self.debug:
@@ -253,7 +283,6 @@ class HTTPClient:
 
         return response.json()
 
-    @with_retry()
     def download_binary(self, endpoint: str) -> bytes:
         """
         Download binary data from an endpoint.
@@ -267,6 +296,12 @@ class HTTPClient:
         Raises:
             Exception: For download errors
         """
+        return with_retry(max_attempts=self.max_retry_attempts)(self._download_binary)(
+            endpoint
+        )
+
+    def _download_binary(self, endpoint: str) -> bytes:
+        """Internal binary download implementation without retry logic."""
         url = f"{self.base_url}{endpoint}"
 
         response = requests.get(url, headers=self.headers)
@@ -284,7 +319,6 @@ class HTTPClient:
 
         return response.content
 
-    @with_retry()
     def download_from_url(self, url: str) -> bytes:
         """
         Download binary data from a presigned URL.
@@ -298,6 +332,12 @@ class HTTPClient:
         Raises:
             Exception: For download errors
         """
+        return with_retry(max_attempts=self.max_retry_attempts)(
+            self._download_from_url
+        )(url)
+
+    def _download_from_url(self, url: str) -> bytes:
+        """Internal URL download implementation without retry logic."""
         # Don't send authentication headers for presigned URLs
         response = requests.get(url)
 
