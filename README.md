@@ -160,8 +160,8 @@ for name, path in tensors.items():
 
 Check out the example scripts:
 
-- [`bench_example.py`](./bench_example.py) - Simple benchmarking example
-- [`predict_example.py`](./predict_example.py) - Prediction with custom inputs, serialised outputs
+- [`bench.py`](./examples/bench.py) - Simple benchmarking example
+- [`predict.py`](./examples/predict.py) - Prediction with custom inputs, serialised outputs
 
 ## 💠 Supported Formats
 
