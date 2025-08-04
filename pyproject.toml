@@ -68,3 +68,7 @@ exclude = ["tests*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "runlocal_hub.__version__.__version__"}
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
