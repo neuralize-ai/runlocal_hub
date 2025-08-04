@@ -163,6 +163,19 @@ Check out the example scripts:
 - [`bench.py`](./examples/bench.py) - Simple benchmarking example
 - [`predict.py`](./examples/predict.py) - Prediction with custom inputs, serialised outputs
 
+To run the examples:
+
+```bash
+# Make sure you have set your API key
+export RUNLOCAL_API_KEY=<your_api_key>
+
+# Run benchmark example
+uv run examples/bench.py
+
+# Run prediction example
+uv run examples/predict.py
+```
+
 ## 💠 Supported Formats
 
 | Format          | Extension                   | Platforms       |
