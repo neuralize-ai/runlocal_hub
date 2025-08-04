@@ -52,6 +52,7 @@ class RunLocalClient:
 
     def __init__(
         self,
+        api_key: Optional[str] = None,
         local_server: bool = False,
         verbosity: int = 2,
     ):
@@ -59,11 +60,14 @@ class RunLocalClient:
         Initialize the RunLocal client.
 
         Args:
+            api_key: Manually specify the RunLocal API key to use
             debug: Enable debug logging (deprecated, use verbosity=3 instead)
             local_server: Use local server instead of production
             verbosity: Control output verbosity (0=silent, 1=minimal, 2=normal 3=verbose, 4=debug). Uses instance default if not specified
         """
-        api_key = os.environ.get(self.ENV_VAR_NAME)
+        if api_key is None:
+            api_key = os.environ.get(self.ENV_VAR_NAME)
+
         if not api_key:
             raise ConfigurationError(
                 f"API key not found. Please set the {self.ENV_VAR_NAME} environment variable.",
